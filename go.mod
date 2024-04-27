@@ -1,6 +1,6 @@
 module github.com/DoktorGhost/go-musthave-shortener-tpl
 
-go 1.22.2
+go 1.21.9
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
