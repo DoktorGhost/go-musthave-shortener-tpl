@@ -6,7 +6,7 @@ import (
 
 func main() {
 
-	err := server.StartServer()
+	err := server.StartServer("8080")
 	if err != nil {
 		panic(err)
 	}
