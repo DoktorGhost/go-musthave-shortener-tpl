@@ -56,6 +56,7 @@ func TestHandlerPost(t *testing.T) {
 			HandlerPost(w, request)
 
 			res := w.Result()
+			defer res.Body.Close()
 
 			assert.Equal(t, tt.want.code, res.StatusCode)
 			assert.Equal(t, tt.want.contentType, res.Header.Get("Content-Type"))
@@ -101,6 +102,7 @@ func TestHandlerGet(t *testing.T) {
 			HandlerGet(w, request)
 
 			res := w.Result()
+			defer res.Body.Close()
 
 			assert.Equal(t, tt.want.code, res.StatusCode)
 			assert.Equal(t, tt.want.location, w.Header().Get("Location"))
