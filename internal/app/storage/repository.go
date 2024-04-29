@@ -4,6 +4,6 @@ package storage
 type Repository interface {
 	Create(url string, shortURL string) error
 	Read(shortURL string) (string, error)
-	Update(shortURL string, newURL string) error
+	//Update(shortURL string, newURL string) error
 	Delete(shortURL string) error
 }
