@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/usecase"
 	"io"
 	"net/http"
@@ -46,7 +45,6 @@ func HandlerGet(res http.ResponseWriter, req *http.Request, useCase usecase.Shor
 	}
 
 	id := req.URL.Path[1:]
-	fmt.Println(id)
 	originalURL, err := useCase.GetOriginalUrl(id)
 	if err != nil {
 		res.WriteHeader(http.StatusBadRequest)
