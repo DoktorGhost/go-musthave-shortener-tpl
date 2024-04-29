@@ -17,33 +17,34 @@ func NewMapStorage() *MapStorage {
 	}
 }
 
-func (m *MapStorage) Read(shortURL string) (string, error) {
+func (m *MapStorage) Read(URL string) (string, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	fmt.Println(m.data[shortURL])
-	value, ok := m.data[shortURL]
+	value, ok := m.data[URL]
 	if !ok {
-		return "", errors.New("short url already exists")
+		return "", errors.New("url not found")
 	} else {
 		return value, nil
 	}
 }
 
 // создаем 2 записи: map[shortURL] = originURL, map[originURL] = shortURL
-func (m *MapStorage) Create(shortURL, originURL string) error {
-	_, err := m.Read(originURL)
+func (m *MapStorage) Create(shortURL, originURL string) string {
+	val, err := m.Read(originURL)
 	if err != nil {
 		m.mu.Lock()
 		defer m.mu.Unlock()
 		m.data[shortURL] = originURL
 		m.data[originURL] = shortURL
-		return nil
-	} else {
-		return errors.New("short url already exists")
+		fmt.Println(m.data)
+		return shortURL
 	}
+	return val
 }
 
 func (m *MapStorage) Delete(shortURL string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	originalURL, err := m.Read(shortURL)
 	if err == nil {
 		delete(m.data, originalURL)

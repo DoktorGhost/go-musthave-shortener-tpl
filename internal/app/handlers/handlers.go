@@ -1,11 +1,13 @@
 package handlers
 
 import (
+	"fmt"
+	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/usecase"
 	"io"
 	"net/http"
 )
 
-func HandlerPost(res http.ResponseWriter, req *http.Request) {
+func HandlerPost(res http.ResponseWriter, req *http.Request, useCase usecase.ShortUrlUseCase) {
 	if req.Method != http.MethodPost {
 		res.WriteHeader(http.StatusMethodNotAllowed)
 		return
@@ -21,25 +23,37 @@ func HandlerPost(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	shortURL := string(body) + "/shortURL"
-	//shortURL := createSgortURL(string(body))  тут будет логика
+	shortURL := useCase.CreateShortUrl(string(body))
+
+	var scheme string
+	if req.TLS != nil {
+		scheme = "https://"
+	} else {
+		scheme = "http://"
+	}
+
+	fullURL := scheme + req.Host + "/" + shortURL
 
 	res.Header().Set("Content-Type", "text/plain")
 	res.WriteHeader(http.StatusCreated)
-	res.Write([]byte(shortURL))
+	res.Write([]byte(fullURL))
 }
 
-func HandlerGet(res http.ResponseWriter, req *http.Request) {
+func HandlerGet(res http.ResponseWriter, req *http.Request, useCase usecase.ShortUrlUseCase) {
 	if req.Method != http.MethodGet {
 		res.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
 
 	id := req.URL.Path[1:]
-	originalURL := "https://" + id //тут будет логика
+	fmt.Println(id)
+	originalURL, err := useCase.GetOriginalUrl(id)
+	if err != nil {
+		res.WriteHeader(http.StatusBadRequest)
+		return
+	}
 
 	if originalURL != "" {
-
 		res.Header().Set("Location", originalURL)
 		res.WriteHeader(http.StatusTemporaryRedirect)
 	} else {

@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-func randomString(length int) string {
+func RandomString(length int) string {
 	charset := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	scr := rand.NewSource(time.Now().UnixNano())
 	r := rand.New(scr)
