@@ -11,10 +11,9 @@ func StartServer(port string) error {
 	db := maps.NewMapStorage()
 	shortUrlUseCase := usecase.NewShortUrlUseCase(db)
 
-	mux := handlers.InitMux()
-	handlers.InitRoutes(mux, *shortUrlUseCase)
+	r := handlers.InitRoutes(*shortUrlUseCase)
 
-	err := http.ListenAndServe(":"+port, mux)
+	err := http.ListenAndServe(":"+port, r)
 
 	if err != nil {
 		return err

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/usecase"
+	"github.com/go-chi/chi/v5"
 	"io"
 	"net/http"
 )
@@ -16,13 +17,31 @@ func HandlerPost(res http.ResponseWriter, req *http.Request, useCase usecase.Sho
 		res.WriteHeader(http.StatusBadRequest)
 		return
 	}
+	defer req.Body.Close()
 
 	if len(body) == 0 {
 		res.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	shortURL := useCase.CreateShortUrl(string(body))
+	//проверка реальности url
+	resp, err := http.Get(string(body))
+	if err != nil {
+		res.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		res.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	shortURL, err := useCase.CreateShortUrl(string(body))
+	if err != nil {
+		res.WriteHeader(http.StatusBadRequest)
+		return
+	}
 
 	var scheme string
 	if req.TLS != nil {
@@ -44,14 +63,14 @@ func HandlerGet(res http.ResponseWriter, req *http.Request, useCase usecase.Shor
 		return
 	}
 
-	id := req.URL.Path[1:]
+	id := chi.URLParam(req, "shortURL")
 	originalURL, err := useCase.GetOriginalUrl(id)
 	if err != nil {
 		res.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	if originalURL != "" {
+	if len(originalURL) > 4 {
 		res.Header().Set("Location", originalURL)
 		res.WriteHeader(http.StatusTemporaryRedirect)
 	} else {

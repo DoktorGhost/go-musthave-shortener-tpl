@@ -2,7 +2,6 @@ package maps
 
 import (
 	"errors"
-	"fmt"
 	"sync"
 )
 
@@ -36,7 +35,6 @@ func (m *MapStorage) Create(shortURL, originURL string) string {
 		defer m.mu.Unlock()
 		m.data[shortURL] = originURL
 		m.data[originURL] = shortURL
-		fmt.Println(m.data)
 		return shortURL
 	}
 	return val

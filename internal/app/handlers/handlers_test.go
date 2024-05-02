@@ -1,111 +1,180 @@
 package handlers
 
 import (
+	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/storage/maps"
+	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/usecase"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 )
 
-func TestHandlerPost(t *testing.T) {
-	type want struct {
-		code        int
-		contentType string
-		url         string
-	}
-	type test struct {
-		name   string
-		method string
-		body   *strings.Reader
-		want   want
-	}
-	tests := []test{
-		{
-			name:   "not POST method",
-			method: http.MethodGet,
-			body:   strings.NewReader("https://yandex.ru"),
-			want: want{
-				code: 405,
-			},
-		},
-		{
-			name:   "body is nil",
-			method: http.MethodPost,
-			body:   strings.NewReader(""),
-			want: want{
-				code:        400,
-				contentType: "",
-			},
-		},
-		{
-			name:   "normal",
-			method: http.MethodPost,
-			body:   strings.NewReader("ya.ru"),
-			want: want{
-				code:        201,
-				contentType: "text/plain",
-				url:         "ya.ru/shortURL",
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			request := httptest.NewRequest(tt.method, "/", tt.body)
-			w := httptest.NewRecorder()
-			HandlerPost(w, request)
+// общая функция для отправки запросов
+func testRequest(t *testing.T, ts *httptest.Server, method,
+	path, body string) (*http.Response, string) {
 
-			res := w.Result()
-			defer res.Body.Close()
-
-			assert.Equal(t, tt.want.code, res.StatusCode)
-			assert.Equal(t, tt.want.contentType, res.Header.Get("Content-Type"))
-			assert.Equal(t, tt.want.url, w.Body.String())
-		})
+	// Создаем кастомный клиент
+	client := &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			// Отключаем автоматический редирект
+			return http.ErrUseLastResponse
+		},
 	}
+	req, err := http.NewRequest(method, ts.URL+path, strings.NewReader(body))
+	require.NoError(t, err)
+
+	resp, err := client.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	return resp, string(respBody)
+
 }
 
-func TestHandlerGet(t *testing.T) {
-	type want struct {
-		code     int
-		location string
-	}
-	type test struct {
-		name   string
+func TestRoute(t *testing.T) {
+	db := maps.NewMapStorage()
+	storage := usecase.NewShortUrlUseCase(db)
+	//добавим в бд тестовую запись
+	one_test := db.Create("SHORTurl", "https://vk.com")
+	two_test := db.Create("SHORTurl_2", ".ru")
+	ts := httptest.NewServer(InitRoutes(*storage))
+	defer ts.Close()
+
+	type values struct {
+		url    string
 		method string
-		target string
+		body   string
+	}
+
+	type want struct {
+		status int
+		body   string
+	}
+
+	var tests = []struct {
+		name   string
+		values values
 		want   want
-	}
-	tests := []test{
+	}{
 		{
-			name:   "not Get method",
-			method: http.MethodPost,
-			target: "yandex.ru",
+			name: "Test #1 Запись в бд",
+			values: values{
+				url:    "/",
+				method: "POST",
+				body:   "https://ya.ru",
+			},
 			want: want{
-				code: 405,
+				status: http.StatusCreated,
 			},
 		},
 		{
-			name:   "normal",
-			method: http.MethodGet,
-			target: "yandex.ru",
+			name: "Test #2 Метод GET вместо POST",
+			values: values{
+				url:    "/",
+				method: "GET",
+				body:   "https://ya.ru",
+			},
 			want: want{
-				code:     307,
-				location: "https://yandex.ru",
+				status: http.StatusMethodNotAllowed,
+			},
+		},
+		{
+			name: "Test #3 без тела запроса",
+			values: values{
+				url:    "/",
+				method: "POST",
+				body:   "",
+			},
+			want: want{
+				status: http.StatusBadRequest,
+			},
+		},
+		{
+			name: "Test #4 не валидный URL",
+			values: values{
+				url:    "/",
+				method: "POST",
+				body:   "ggf.fdfhk/fsdf",
+			},
+			want: want{
+				status: http.StatusBadRequest,
+			},
+		},
+		{
+			name: "Test #5 добавление дубликата",
+			values: values{
+				url:    "/",
+				method: "POST",
+				body:   "https://vk.com",
+			},
+			want: want{
+				status: http.StatusCreated,
+				body:   ts.URL + "/SHORTurl",
+			},
+		},
+		{
+			name: "Test #6 проверка извлечения URL по сокращенной ссылке",
+			values: values{
+				url:    "/" + one_test,
+				method: "GET",
+				body:   "",
+			},
+			want: want{
+				status: http.StatusTemporaryRedirect,
+				body:   "https://vk.com",
+			},
+		},
+		{
+			name: "Test #7 метод POST вмсето GET",
+			values: values{
+				url:    "/" + one_test,
+				method: "POST",
+				body:   "",
+			},
+			want: want{
+				status: http.StatusMethodNotAllowed,
+			},
+		},
+		{
+			name: "Test #8 несуществующая сокращенная ссылка",
+			values: values{
+				url:    "/sdfjvu88934nkdkl",
+				method: "GET",
+				body:   "",
+			},
+			want: want{
+				status: http.StatusBadRequest,
+			},
+		},
+		{
+			name: "Test #9 оригинальная ссылка ' ' ",
+			values: values{
+				url:    "/" + two_test,
+				method: "GET",
+				body:   "",
+			},
+			want: want{
+				status: http.StatusNotFound,
 			},
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			request := httptest.NewRequest(tt.method, "/"+tt.target, nil)
-			w := httptest.NewRecorder()
-			HandlerGet(w, request)
+	for num, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			resp, url := testRequest(t, ts, test.values.method, test.values.url, test.values.body)
+			assert.Equal(t, test.want.status, resp.StatusCode)
+			if num == 4 {
+				assert.Equal(t, test.want.body, url)
+			} else {
+				assert.Equal(t, test.want.body, resp.Header.Get("Location"))
+			}
 
-			res := w.Result()
-			defer res.Body.Close()
-
-			assert.Equal(t, tt.want.code, res.StatusCode)
-			assert.Equal(t, tt.want.location, w.Header().Get("Location"))
 		})
+
 	}
 }
