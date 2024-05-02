@@ -9,7 +9,7 @@ import (
 
 func StartServer(port string) error {
 	db := maps.NewMapStorage()
-	shortUrlUseCase := usecase.NewShortUrlUseCase(db)
+	shortUrlUseCase := usecase.NewShortURLUseCase(db)
 
 	r := handlers.InitRoutes(*shortUrlUseCase)
 

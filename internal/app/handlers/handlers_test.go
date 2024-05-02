@@ -39,10 +39,10 @@ func testRequest(t *testing.T, ts *httptest.Server, method,
 
 func TestRoute(t *testing.T) {
 	db := maps.NewMapStorage()
-	storage := usecase.NewShortUrlUseCase(db)
+	storage := usecase.NewShortURLUseCase(db)
 	//добавим в бд тестовую запись
-	one_test := db.Create("SHORTurl", "https://vk.com")
-	two_test := db.Create("SHORTurl_2", ".ru")
+	oneTest := db.Create("SHORTurl", "https://vk.com")
+	twoTest := db.Create("SHORTurl_2", ".ru")
 	ts := httptest.NewServer(InitRoutes(*storage))
 	defer ts.Close()
 
@@ -121,7 +121,7 @@ func TestRoute(t *testing.T) {
 		{
 			name: "Test #6 проверка извлечения URL по сокращенной ссылке",
 			values: values{
-				url:    "/" + one_test,
+				url:    "/" + oneTest,
 				method: "GET",
 				body:   "",
 			},
@@ -133,7 +133,7 @@ func TestRoute(t *testing.T) {
 		{
 			name: "Test #7 метод POST вмсето GET",
 			values: values{
-				url:    "/" + one_test,
+				url:    "/" + oneTest,
 				method: "POST",
 				body:   "",
 			},
@@ -155,7 +155,7 @@ func TestRoute(t *testing.T) {
 		{
 			name: "Test #9 оригинальная ссылка ' ' ",
 			values: values{
-				url:    "/" + two_test,
+				url:    "/" + twoTest,
 				method: "GET",
 				body:   "",
 			},
@@ -167,6 +167,8 @@ func TestRoute(t *testing.T) {
 	for num, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			resp, url := testRequest(t, ts, test.values.method, test.values.url, test.values.body)
+			defer resp.Body.Close()
+
 			assert.Equal(t, test.want.status, resp.StatusCode)
 			if num == 4 {
 				assert.Equal(t, test.want.body, url)

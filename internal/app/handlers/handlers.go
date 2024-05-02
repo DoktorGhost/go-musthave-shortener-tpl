@@ -7,7 +7,7 @@ import (
 	"net/http"
 )
 
-func HandlerPost(res http.ResponseWriter, req *http.Request, useCase usecase.ShortUrlUseCase) {
+func HandlerPost(res http.ResponseWriter, req *http.Request, useCase usecase.ShortURLUseCase) {
 	if req.Method != http.MethodPost {
 		res.WriteHeader(http.StatusMethodNotAllowed)
 		return
@@ -37,7 +37,7 @@ func HandlerPost(res http.ResponseWriter, req *http.Request, useCase usecase.Sho
 		return
 	}
 
-	shortURL, err := useCase.CreateShortUrl(string(body))
+	shortURL, err := useCase.CreateShortURL(string(body))
 	if err != nil {
 		res.WriteHeader(http.StatusBadRequest)
 		return
@@ -57,14 +57,14 @@ func HandlerPost(res http.ResponseWriter, req *http.Request, useCase usecase.Sho
 	res.Write([]byte(fullURL))
 }
 
-func HandlerGet(res http.ResponseWriter, req *http.Request, useCase usecase.ShortUrlUseCase) {
+func HandlerGet(res http.ResponseWriter, req *http.Request, useCase usecase.ShortURLUseCase) {
 	if req.Method != http.MethodGet {
 		res.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
 
 	id := chi.URLParam(req, "shortURL")
-	originalURL, err := useCase.GetOriginalUrl(id)
+	originalURL, err := useCase.GetOriginalURL(id)
 	if err != nil {
 		res.WriteHeader(http.StatusBadRequest)
 		return

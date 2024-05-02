@@ -6,7 +6,7 @@ import (
 	"net/http"
 )
 
-func InitRoutes(useCase usecase.ShortUrlUseCase) chi.Router {
+func InitRoutes(useCase usecase.ShortURLUseCase) chi.Router {
 	r := chi.NewRouter()
 
 	r.Post("/", func(w http.ResponseWriter, r *http.Request) {
