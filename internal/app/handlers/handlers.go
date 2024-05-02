@@ -5,6 +5,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"io"
 	"net/http"
+	"net/url"
 )
 
 func HandlerPost(res http.ResponseWriter, req *http.Request, useCase usecase.ShortURLUseCase) {
@@ -25,14 +26,22 @@ func HandlerPost(res http.ResponseWriter, req *http.Request, useCase usecase.Sho
 	}
 
 	//проверка реальности url
-	resp, err := http.Get(string(body))
-	if err != nil {
-		res.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	defer resp.Body.Close()
+	/*
+		resp, err := http.Get(string(body))
+		if err != nil {
+			res.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
+
+		if resp.StatusCode != http.StatusOK {
+			res.WriteHeader(http.StatusBadRequest)
+			return
+		}
+	*/
+	_, err = url.ParseRequestURI(string(body))
+	if err != nil {
 		res.WriteHeader(http.StatusBadRequest)
 		return
 	}
