@@ -9,9 +9,9 @@ import (
 
 func StartServer(port string) error {
 	db := maps.NewMapStorage()
-	shortUrlUseCase := usecase.NewShortURLUseCase(db)
+	shortURLUseCase := usecase.NewShortURLUseCase(db)
 
-	r := handlers.InitRoutes(*shortUrlUseCase)
+	r := handlers.InitRoutes(*shortURLUseCase)
 
 	err := http.ListenAndServe(":"+port, r)
 
