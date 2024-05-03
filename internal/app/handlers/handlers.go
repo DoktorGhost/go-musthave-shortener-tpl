@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/config"
 	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/usecase"
 	"github.com/go-chi/chi/v5"
 	"io"
@@ -25,21 +26,6 @@ func HandlerPost(res http.ResponseWriter, req *http.Request, useCase usecase.Sho
 		return
 	}
 
-	//проверка реальности url
-	/*
-		resp, err := http.Get(string(body))
-		if err != nil {
-			res.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		defer resp.Body.Close()
-
-
-		if resp.StatusCode != http.StatusOK {
-			res.WriteHeader(http.StatusBadRequest)
-			return
-		}
-	*/
 	_, err = url.ParseRequestURI(string(body))
 	if err != nil {
 		res.WriteHeader(http.StatusBadRequest)
@@ -52,14 +38,20 @@ func HandlerPost(res http.ResponseWriter, req *http.Request, useCase usecase.Sho
 		return
 	}
 
-	var scheme string
-	if req.TLS != nil {
-		scheme = "https://"
-	} else {
-		scheme = "http://"
-	}
+	fullURL := ""
 
-	fullURL := scheme + req.Host + "/" + shortURL
+	if config.BaseURL == "" {
+		var scheme string
+		if req.TLS != nil {
+			scheme = "https://"
+		} else {
+			scheme = "http://"
+		}
+
+		fullURL = scheme + req.Host + "/" + shortURL
+	} else {
+		fullURL = config.BaseURL + "/" + shortURL
+	}
 
 	res.Header().Set("Content-Type", "text/plain")
 	res.WriteHeader(http.StatusCreated)
