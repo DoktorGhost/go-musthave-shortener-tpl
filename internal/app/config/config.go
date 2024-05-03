@@ -51,6 +51,6 @@ func ParseConfig() *Config {
 }
 
 func ParseBaseURL() string {
-	flag.StringVar(&BaseURL, "b", "http://localhost/", "Net address host:port")
+	flag.StringVar(&BaseURL, "b", "http://localhost:8080/", "Net address host:port")
 	return BaseURL
 }

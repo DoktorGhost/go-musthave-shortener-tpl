@@ -26,21 +26,6 @@ func HandlerPost(res http.ResponseWriter, req *http.Request, useCase usecase.Sho
 		return
 	}
 
-	//проверка реальности url
-	/*
-		resp, err := http.Get(string(body))
-		if err != nil {
-			res.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		defer resp.Body.Close()
-
-
-		if resp.StatusCode != http.StatusOK {
-			res.WriteHeader(http.StatusBadRequest)
-			return
-		}
-	*/
 	_, err = url.ParseRequestURI(string(body))
 	if err != nil {
 		res.WriteHeader(http.StatusBadRequest)
