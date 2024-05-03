@@ -38,7 +38,7 @@ func ParseConfig() *Config {
 	addr := new(Config)
 	_ = flag.Value(addr)
 	flag.Var(addr, "a", "Net address host:port")
-	flag.StringVar(&BaseURL, "b", "http://localhost/", "Net address host:port")
+	flag.StringVar(&BaseURL, "b", "", "Net address host:port")
 	flag.Parse()
 
 	if addr.Host == "" {
@@ -48,9 +48,4 @@ func ParseConfig() *Config {
 		addr.Port = 8080
 	}
 	return addr
-}
-
-func ParseBaseURL() string {
-	flag.StringVar(&BaseURL, "b", "http://localhost:8080/", "Net address host:port")
-	return BaseURL
 }

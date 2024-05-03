@@ -38,7 +38,9 @@ func HandlerPost(res http.ResponseWriter, req *http.Request, useCase usecase.Sho
 		return
 	}
 
-	/*
+	fullURL := ""
+
+	if config.BaseURL == "" {
 		var scheme string
 		if req.TLS != nil {
 			scheme = "https://"
@@ -46,10 +48,10 @@ func HandlerPost(res http.ResponseWriter, req *http.Request, useCase usecase.Sho
 			scheme = "http://"
 		}
 
-		fullURL := scheme + req.Host + "/" + shortURL
-	*/
-
-	fullURL := config.BaseURL + shortURL
+		fullURL = scheme + req.Host + "/" + shortURL
+	} else {
+		fullURL = config.BaseURL + shortURL
+	}
 
 	res.Header().Set("Content-Type", "text/plain")
 	res.WriteHeader(http.StatusCreated)
