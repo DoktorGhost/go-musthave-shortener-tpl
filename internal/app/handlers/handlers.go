@@ -50,7 +50,7 @@ func HandlerPost(res http.ResponseWriter, req *http.Request, useCase usecase.Sho
 
 		fullURL = scheme + req.Host + "/" + shortURL
 	} else {
-		fullURL = config.BaseURL + shortURL
+		fullURL = config.BaseURL + "/" + shortURL
 	}
 
 	res.Header().Set("Content-Type", "text/plain")
