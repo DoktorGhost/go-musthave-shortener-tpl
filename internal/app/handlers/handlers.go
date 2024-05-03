@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/config"
 	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/usecase"
 	"github.com/go-chi/chi/v5"
 	"io"
@@ -52,14 +53,18 @@ func HandlerPost(res http.ResponseWriter, req *http.Request, useCase usecase.Sho
 		return
 	}
 
-	var scheme string
-	if req.TLS != nil {
-		scheme = "https://"
-	} else {
-		scheme = "http://"
-	}
+	/*
+		var scheme string
+		if req.TLS != nil {
+			scheme = "https://"
+		} else {
+			scheme = "http://"
+		}
 
-	fullURL := scheme + req.Host + "/" + shortURL
+		fullURL := scheme + req.Host + "/" + shortURL
+	*/
+
+	fullURL := config.BaseURL + shortURL
 
 	res.Header().Set("Content-Type", "text/plain")
 	res.WriteHeader(http.StatusCreated)
