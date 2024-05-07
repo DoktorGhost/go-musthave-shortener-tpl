@@ -8,8 +8,7 @@ import (
 func main() {
 	hostPort := config.ParseConfig()
 
-	err := server.StartServer(hostPort.Port)
-	//err := server.StartServer("8080")
+	err := server.StartServer(hostPort)
 	if err != nil {
 		panic(err)
 	}
