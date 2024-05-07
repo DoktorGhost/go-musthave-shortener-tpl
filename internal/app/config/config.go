@@ -43,7 +43,6 @@ var BaseURL string
 func ParseConfig() *Config {
 	var cfg HostPort
 	env.Parse(&cfg)
-	fmt.Println(cfg)
 
 	addr := new(Config)
 	_ = flag.Value(addr)
@@ -54,11 +53,9 @@ func ParseConfig() *Config {
 	if len(cfg.Hp) == 0 {
 		if addr.Host == "" {
 			addr.Host = "localhost"
-			fmt.Println("defaulting to localhost:", addr.Host)
 		}
 		if addr.Port == 0 {
 			addr.Port = 8080
-			fmt.Println("defaulting to 8080:", addr.Port)
 		}
 	} else {
 		addr.Host = cfg.Hp[0]
