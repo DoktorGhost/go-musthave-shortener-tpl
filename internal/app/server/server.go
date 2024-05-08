@@ -15,20 +15,20 @@ func StartServer(hostPort *config.Config) error {
 	db := maps.NewMapStorage()
 	shortURLUseCase := usecase.NewShortURLUseCase(db)
 
+	//логирование
 	logg, err := zap.NewDevelopment()
 	if err != nil {
 		panic(err)
 	}
 	defer logg.Sync()
-
 	logger.InitLogger(logg)
-
 	sugar := *logg.Sugar()
-
 	sugar.Infow("server started", "addr", hostPort.String())
 
+	//инициализация роутов
 	r := handlers.InitRoutes(*shortURLUseCase)
 
+	//запускаем сервер
 	err = http.ListenAndServe(":"+strconv.Itoa(hostPort.Port), r)
 
 	if err != nil {

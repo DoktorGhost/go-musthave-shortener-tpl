@@ -7,22 +7,6 @@ import (
 	"net/http"
 )
 
-/*
-func InitRoutes(useCase usecase.ShortURLUseCase) chi.Router {
-	r := chi.NewRouter()
-
-	r.Post("/", func(w http.ResponseWriter, r *http.Request) {
-		HandlerPost(w, r, useCase)
-	})
-	r.Get("/{shortURL}", func(w http.ResponseWriter, r *http.Request) {
-		HandlerGet(w, r, useCase)
-	})
-	return r
-}
-
-
-*/
-
 func InitRoutes(useCase usecase.ShortURLUseCase) chi.Router {
 	r := chi.NewRouter()
 
@@ -33,6 +17,9 @@ func InitRoutes(useCase usecase.ShortURLUseCase) chi.Router {
 	})
 	r.Get("/{shortURL}", func(w http.ResponseWriter, r *http.Request) {
 		HandlerGet(w, r, useCase)
+	})
+	r.Post("/api/shorten", func(w http.ResponseWriter, r *http.Request) {
+		HandlerAPIPost(w, r, useCase)
 	})
 	return r
 }
