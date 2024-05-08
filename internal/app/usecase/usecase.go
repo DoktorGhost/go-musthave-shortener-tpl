@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/shortener"
 	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/storage"
+	"net/url"
 )
 
 type ShortURLUseCase struct {
@@ -15,6 +16,11 @@ func NewShortURLUseCase(storage storage.Repository) *ShortURLUseCase {
 }
 
 func (uc *ShortURLUseCase) CreateShortURL(originalURL string) (string, error) {
+	_, err := url.ParseRequestURI(originalURL)
+	if err != nil {
+		return "", err
+	}
+	
 	for i := 0; i < 10; i++ {
 		shortURL := shortener.RandomString(8)
 		_, err := uc.storage.Read(shortURL)

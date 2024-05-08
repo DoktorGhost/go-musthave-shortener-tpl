@@ -42,16 +42,14 @@ func testRequest(t *testing.T, ts *httptest.Server, method,
 func TestRoute(t *testing.T) {
 	db := maps.NewMapStorage()
 	storage := usecase.NewShortURLUseCase(db)
+
 	logg, err := zap.NewDevelopment()
 	if err != nil {
 		panic(err)
 	}
 	defer logg.Sync()
-
 	logger.InitLogger(logg)
-
 	sugar := *logg.Sugar()
-
 	sugar.Infow("server started")
 
 	//добавим в бд тестовую запись
@@ -175,6 +173,50 @@ func TestRoute(t *testing.T) {
 			},
 			want: want{
 				status: http.StatusNotFound,
+			},
+		},
+		{
+			name: "Test #10 не тот метод HandlerApiPost",
+			values: values{
+				url:    "/api/shorten",
+				method: "GET",
+				body:   `{"url":"https://ya.ru/"}`,
+			},
+			want: want{
+				status: http.StatusMethodNotAllowed,
+			},
+		},
+		{
+			name: "Test #11 не корректный JSON HandlerApiPost",
+			values: values{
+				url:    "/api/shorten",
+				method: "POST",
+				body:   `{"https://ya.ru/"}`,
+			},
+			want: want{
+				status: http.StatusInternalServerError,
+			},
+		},
+		{
+			name: "Test #12 не валидный url HandlerApiPost",
+			values: values{
+				url:    "/api/shorten",
+				method: "POST",
+				body:   `{"url":"sobaka"}`,
+			},
+			want: want{
+				status: http.StatusBadRequest,
+			},
+		},
+		{
+			name: "Test #13 валидный url HandlerApiPost",
+			values: values{
+				url:    "/api/shorten",
+				method: "POST",
+				body:   `{"url":"https://vk.com"}`,
+			},
+			want: want{
+				status: http.StatusCreated,
 			},
 		},
 	}

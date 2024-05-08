@@ -1,12 +1,13 @@
 package handlers
 
 import (
+	"encoding/json"
 	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/config"
+	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/models"
 	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/usecase"
 	"github.com/go-chi/chi/v5"
 	"io"
 	"net/http"
-	"net/url"
 )
 
 func HandlerPost(res http.ResponseWriter, req *http.Request, useCase usecase.ShortURLUseCase) {
@@ -22,12 +23,6 @@ func HandlerPost(res http.ResponseWriter, req *http.Request, useCase usecase.Sho
 	defer req.Body.Close()
 
 	if len(body) == 0 {
-		res.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	_, err = url.ParseRequestURI(string(body))
-	if err != nil {
 		res.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -76,5 +71,54 @@ func HandlerGet(res http.ResponseWriter, req *http.Request, useCase usecase.Shor
 		res.WriteHeader(http.StatusTemporaryRedirect)
 	} else {
 		res.WriteHeader(http.StatusNotFound)
+	}
+}
+
+func HandlerApiPost(w http.ResponseWriter, r *http.Request, useCase usecase.ShortURLUseCase) {
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req models.Request
+	dec := json.NewDecoder(r.Body)
+	if err := dec.Decode(&req); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	defer r.Body.Close()
+
+	shortURL, err := useCase.CreateShortURL(req.URL)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	fullURL := ""
+
+	if config.BaseURL == "" {
+		var scheme string
+		if r.TLS != nil {
+			scheme = "https://"
+		} else {
+			scheme = "http://"
+		}
+
+		fullURL = scheme + r.Host + "/" + shortURL
+	} else {
+		fullURL = config.BaseURL + "/" + shortURL
+	}
+
+	resp := models.Response{
+		Result: fullURL,
+	}
+
+	w.Header().Set("Content-Type", "text/plain")
+
+	w.WriteHeader(http.StatusCreated)
+	enc := json.NewEncoder(w)
+	if err := enc.Encode(resp); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 }
