@@ -19,7 +19,7 @@ func InitRoutes(useCase usecase.ShortURLUseCase) chi.Router {
 		HandlerGet(w, r, useCase)
 	})
 	r.Post("/api/shorten", func(w http.ResponseWriter, r *http.Request) {
-		HandlerApiPost(w, r, useCase)
+		HandlerAPIPost(w, r, useCase)
 	})
 	return r
 }

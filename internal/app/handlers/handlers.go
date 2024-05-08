@@ -74,7 +74,7 @@ func HandlerGet(res http.ResponseWriter, req *http.Request, useCase usecase.Shor
 	}
 }
 
-func HandlerApiPost(w http.ResponseWriter, r *http.Request, useCase usecase.ShortURLUseCase) {
+func HandlerAPIPost(w http.ResponseWriter, r *http.Request, useCase usecase.ShortURLUseCase) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
