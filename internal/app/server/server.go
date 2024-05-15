@@ -1,7 +1,6 @@
 package server
 
 import (
-	"errors"
 	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/config"
 	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/handlers"
 	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/logger"
@@ -35,10 +34,6 @@ func StartServer(hostPort *config.Config) error {
 	if err != nil {
 		log.Println("ошибка чтения конфигурациооного файла", err)
 		return err
-	}
-	if cons == nil {
-		log.Println("Consumer is nil")
-		return errors.New("Consumer is nil")
 	}
 	for {
 		event, err := cons.ReadEvent()
