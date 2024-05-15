@@ -33,21 +33,21 @@ func StartServer(hostPort *config.Config) error {
 
 	if err != nil {
 		log.Println("ошибка чтения конфигурациооного файла", err)
-		return err
-	}
-	for {
-		event, err := cons.ReadEvent()
-		if err != nil {
-			if err == io.EOF {
+	} else {
+		for {
+			event, err := cons.ReadEvent()
+			if err != nil {
+				if err == io.EOF {
+					break
+				}
+				log.Println("ошибка чтения события", err)
+				continue
+			}
+			if event == nil {
 				break
 			}
-			log.Println("ошибка чтения события", err)
-			continue
+			shortURLUseCase.Write(event.OriginalURL, event.ShortURL)
 		}
-		if event == nil {
-			break
-		}
-		shortURLUseCase.Write(event.OriginalURL, event.ShortURL)
 	}
 
 	//инициализация роутов
