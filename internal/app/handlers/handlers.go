@@ -105,7 +105,6 @@ func HandlerAPIPost(w http.ResponseWriter, r *http.Request, useCase usecase.Shor
 		} else {
 			scheme = "http://"
 		}
-
 		fullURL = scheme + r.Host + "/" + shortURL
 	} else {
 		fullURL = config.BaseURL + "/" + shortURL

@@ -4,14 +4,15 @@ import (
 	"flag"
 	"fmt"
 	"github.com/caarlos0/env/v6"
+	"log"
 	"strconv"
 	"strings"
 )
 
-// Config структура для хранения конфигурационных параметров/
 type HostPort struct {
-	Hp      []string `env:"SERVER_ADDRESS" envSeparator:":"`
-	BaseURL string   `env:"BASE_URL"`
+	Hp              []string `env:"SERVER_ADDRESS" envSeparator:":"`
+	BaseURL         string   `env:"BASE_URL"`
+	FileStoragePath string   `env:"FILE_STORAGE_PATH"`
 }
 
 type Config struct {
@@ -39,15 +40,20 @@ func (c *Config) Set(value string) error {
 }
 
 var BaseURL string
+var FileStoragePath string
 
 func ParseConfig() *Config {
 	var cfg HostPort
-	env.Parse(&cfg)
+	if err := env.Parse(&cfg); err != nil {
+		log.Println(err)
+		return nil
+	}
 
-	addr := new(Config)
-	_ = flag.Value(addr)
+	//парсим флаги командной строки
+	addr := &Config{}
 	flag.Var(addr, "a", "Net address host:port")
-	flag.StringVar(&BaseURL, "b", "", "Net address base url")
+	baseURL := flag.String("b", "", "Net address base url")
+	storagePath := flag.String("f", "", "File storage path")
 	flag.Parse()
 
 	if len(cfg.Hp) == 0 {
@@ -61,12 +67,26 @@ func ParseConfig() *Config {
 		addr.Host = cfg.Hp[0]
 		port, err := strconv.Atoi(cfg.Hp[1])
 		if err != nil {
+			log.Println(err)
 			return nil
 		}
 		addr.Port = port
 	}
+
+	BaseURL = ""
 	if cfg.BaseURL != "" {
 		BaseURL = strings.TrimSuffix(cfg.BaseURL, "/")
+	} else if *baseURL != "" {
+		BaseURL = *baseURL
+	}
+
+	if cfg.FileStoragePath != "" {
+		FileStoragePath = cfg.FileStoragePath
+	} else if *storagePath != "" {
+		FileStoragePath = *storagePath
+	} else {
+		FileStoragePath = "/tmp/short-url-db.json"
+		//FileStoragePath = "C:\\Users\\Олег\\go\\src\\yandex-praktikum\\project3\\go-musthave-shortener-tpl\\tmp\\short-url-db.json"
 	}
 
 	return addr
