@@ -5,26 +5,34 @@ import (
 	"fmt"
 	"github.com/caarlos0/env/v6"
 	"log"
+	"os"
 	"strconv"
 	"strings"
 )
 
-type HostPort struct {
+type Config struct {
+	Host            string
+	Port            string
+	BaseURL         string
+	FileStoragePath string
+}
+
+type EnvStruct struct {
 	Hp              []string `env:"SERVER_ADDRESS" envSeparator:":"`
 	BaseURL         string   `env:"BASE_URL"`
 	FileStoragePath string   `env:"FILE_STORAGE_PATH"`
 }
 
-type Config struct {
+type HostPort struct {
 	Host string
 	Port int
 }
 
-func (c *Config) String() string {
+func (c *HostPort) String() string {
 	return fmt.Sprintf("%s:%d", c.Host, c.Port)
 }
 
-func (c *Config) Set(value string) error {
+func (c *HostPort) Set(value string) error {
 	hp := strings.Split(value, ":")
 	if len(hp) != 2 {
 		return fmt.Errorf("invalid host:port format: %s", value)
@@ -39,55 +47,49 @@ func (c *Config) Set(value string) error {
 	return nil
 }
 
-var BaseURL string
-var FileStoragePath string
-
 func ParseConfig() *Config {
-	var cfg HostPort
-	if err := env.Parse(&cfg); err != nil {
+	var envStruct EnvStruct
+	//считываем все переменны окружения в cfg
+	if err := env.Parse(&envStruct); err != nil {
 		log.Println(err)
 		return nil
 	}
 
+	config := new(Config)
+	hostPort := new(HostPort)
+
 	//парсим флаги командной строки
-	addr := &Config{}
-	flag.Var(addr, "a", "Net address host:port")
-	baseURL := flag.String("b", "", "Net address base url")
-	storagePath := flag.String("f", "", "File storage path")
+	flag.Var(hostPort, "a", "Net address host:port")
+	flag.StringVar(&config.BaseURL, "b", "", "Net address base url")
+	flag.StringVar(&config.FileStoragePath, "f", "/tmp/short-url-db.json", "File storage path")
 	flag.Parse()
 
-	if len(cfg.Hp) == 0 {
-		if addr.Host == "" {
-			addr.Host = "localhost"
-		}
-		if addr.Port == 0 {
-			addr.Port = 8080
-		}
+	_, exists := os.LookupEnv("SERVER_ADDRESS")
+	if exists {
+		config.Host = envStruct.Hp[0]
+		config.Port = envStruct.Hp[1]
 	} else {
-		addr.Host = cfg.Hp[0]
-		port, err := strconv.Atoi(cfg.Hp[1])
-		if err != nil {
-			log.Println(err)
-			return nil
+		if hostPort.Host == "" {
+			config.Host = "localhost"
+		} else {
+			config.Host = hostPort.Host
 		}
-		addr.Port = port
+		if hostPort.Port == 0 {
+			config.Port = "8080"
+		} else {
+			config.Port = strconv.Itoa(hostPort.Port)
+		}
 	}
 
-	BaseURL = ""
-	if cfg.BaseURL != "" {
-		BaseURL = strings.TrimSuffix(cfg.BaseURL, "/")
-	} else if *baseURL != "" {
-		BaseURL = *baseURL
+	value, exists := os.LookupEnv("BASE_URL")
+	if exists {
+		config.BaseURL = value
 	}
 
-	if cfg.FileStoragePath != "" {
-		FileStoragePath = cfg.FileStoragePath
-	} else if *storagePath != "" {
-		FileStoragePath = *storagePath
-	} else {
-		FileStoragePath = "/tmp/short-url-db.json"
-		//FileStoragePath = "C:\\Users\\Олег\\go\\src\\yandex-praktikum\\project3\\go-musthave-shortener-tpl\\tmp\\short-url-db.json"
+	value, ok := os.LookupEnv("FILE_STORAGE_PATH")
+	if ok {
+		config.FileStoragePath = value
 	}
 
-	return addr
+	return config
 }

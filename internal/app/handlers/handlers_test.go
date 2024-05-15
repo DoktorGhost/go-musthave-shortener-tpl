@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"fmt"
+	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/config"
 	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/logger"
 	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/storage/maps"
 	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/usecase"
@@ -54,11 +55,11 @@ func TestRoute(t *testing.T) {
 	logger.InitLogger(logg)
 	sugar := *logg.Sugar()
 	sugar.Infow("server started")
-
+	conf := config.ParseConfig()
 	//добавим в бд тестовую запись
 	oneTest, _ := db.Create("SHORTurl", "https://vk.com")
 	twoTest, _ := db.Create("SHORTurl_2", ".ru")
-	ts := httptest.NewServer(InitRoutes(*storage))
+	ts := httptest.NewServer(InitRoutes(*storage, conf))
 	defer ts.Close()
 
 	type values struct {
