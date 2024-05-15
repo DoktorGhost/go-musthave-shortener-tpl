@@ -4,9 +4,12 @@ import (
 	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/config"
 	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/handlers"
 	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/logger"
+	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/osfile"
 	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/storage/maps"
 	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/usecase"
 	"go.uber.org/zap"
+	"io"
+	"log"
 	"net/http"
 	"strconv"
 )
@@ -24,6 +27,27 @@ func StartServer(hostPort *config.Config) error {
 	logger.InitLogger(logg)
 	sugar := *logg.Sugar()
 	sugar.Infow("server started", "addr", hostPort.String())
+
+	//чтение конфигурациооного файла бд
+	cons, err := osfile.NewConsumer(config.FileStoragePath)
+
+	if err != nil {
+		log.Println("ошибка чтения конфигурациооного файла", err)
+	}
+	for {
+		event, err := cons.ReadEvent()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			log.Println("ошибка чтения события", err)
+			continue
+		}
+		if event == nil {
+			break
+		}
+		shortURLUseCase.Write(event.OriginalUrl, event.ShortUrl)
+	}
 
 	//инициализация роутов
 	r := handlers.InitRoutes(*shortURLUseCase)

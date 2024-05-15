@@ -2,7 +2,7 @@ package storage
 
 // Repository представляет интерфейс для работы с хранилищем данных.
 type Repository interface {
-	Create(url string, shortURL string) string
+	Create(url string, shortURL string) (string, bool)
 	Read(shortURL string) (string, error)
 	Delete(shortURL string) error
 }

@@ -28,16 +28,16 @@ func (m *MapStorage) Read(URL string) (string, error) {
 }
 
 // создаем 2 записи: map[shortURL] = originURL, map[originURL] = shortURL
-func (m *MapStorage) Create(shortURL, originURL string) string {
+func (m *MapStorage) Create(shortURL, originURL string) (string, bool) {
 	val, err := m.Read(originURL)
 	if err != nil {
 		m.mu.Lock()
 		defer m.mu.Unlock()
 		m.data[shortURL] = originURL
 		m.data[originURL] = shortURL
-		return shortURL
+		return shortURL, true
 	}
-	return val
+	return val, false
 }
 
 func (m *MapStorage) Delete(shortURL string) error {

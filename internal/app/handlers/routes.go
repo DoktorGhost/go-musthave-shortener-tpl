@@ -12,9 +12,7 @@ func InitRoutes(useCase usecase.ShortURLUseCase) chi.Router {
 	r := chi.NewRouter()
 
 	r.Use(logger.WithLogging)
-	r.Use(compressor.GzipMiddleware)
-	r.Use(compressor.DecompressMiddleware)
-	//r.Use(compressor.GzipAndDecompressMiddleware)
+	r.Use(compressor.GzipAndDecompressMiddleware)
 
 	r.Post("/", func(w http.ResponseWriter, r *http.Request) {
 		HandlerPost(w, r, useCase)
