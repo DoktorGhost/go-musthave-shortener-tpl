@@ -7,6 +7,7 @@ import (
 	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/usecase"
 	"github.com/go-chi/chi/v5"
 	"io"
+	"log"
 	"net/http"
 )
 
@@ -90,6 +91,7 @@ func HandlerAPIPost(w http.ResponseWriter, r *http.Request, useCase usecase.Shor
 
 	shortURL, err := useCase.CreateShortURL(req.URL)
 	if err != nil {
+		log.Println("Ошибка при создании шорта")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
