@@ -45,8 +45,8 @@ func (uc *ShortURLUseCase) CreateShortURL(originalURL string) (string, error) {
 					intFromTime := currentTime.Unix()
 					event := osfile.Event{
 						UUID:        strconv.Itoa(int(intFromTime)),
-						ShortUrl:    short,
-						OriginalUrl: originalURL,
+						ShortURL:    short,
+						OriginalURL: originalURL,
 					}
 					err = prod.WriteEvent(&event)
 					if err != nil {

@@ -56,8 +56,8 @@ func TestRoute(t *testing.T) {
 	sugar.Infow("server started")
 
 	//добавим в бд тестовую запись
-	oneTest := db.Create("SHORTurl", "https://vk.com")
-	twoTest := db.Create("SHORTurl_2", ".ru")
+	oneTest, _ := db.Create("SHORTurl", "https://vk.com")
+	twoTest, _ := db.Create("SHORTurl_2", ".ru")
 	ts := httptest.NewServer(InitRoutes(*storage))
 	defer ts.Close()
 

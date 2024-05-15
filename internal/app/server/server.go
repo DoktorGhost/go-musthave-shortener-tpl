@@ -46,7 +46,7 @@ func StartServer(hostPort *config.Config) error {
 		if event == nil {
 			break
 		}
-		shortURLUseCase.Write(event.OriginalUrl, event.ShortUrl)
+		shortURLUseCase.Write(event.OriginalURL, event.ShortURL)
 	}
 
 	//инициализация роутов

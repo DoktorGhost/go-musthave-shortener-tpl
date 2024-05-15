@@ -85,7 +85,8 @@ func ParseConfig() *Config {
 	} else if *storagePath != "" {
 		FileStoragePath = *storagePath
 	} else {
-		FileStoragePath = "C:\\Users\\Олег\\go\\src\\yandex-praktikum\\project3\\go-musthave-shortener-tpl\\tmp\\short-url-db.json"
+		FileStoragePath = "/tmp/short-url-db.json"
+		//FileStoragePath = "C:\\Users\\Олег\\go\\src\\yandex-praktikum\\project3\\go-musthave-shortener-tpl\\tmp\\short-url-db.json"
 	}
 
 	return addr
