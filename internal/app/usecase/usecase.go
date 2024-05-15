@@ -37,7 +37,7 @@ func (uc *ShortURLUseCase) CreateShortURL(originalURL string) (string, error) {
 			short, flags := uc.storage.Create(shortURL, originalURL)
 			//запись в файл, если флаг true
 
-			if flags == true {
+			if flags {
 				if config.FileStoragePath != "" {
 					prod, err := osfile.NewProducer(config.FileStoragePath)
 					if err != nil {
