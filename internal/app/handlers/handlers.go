@@ -11,7 +11,7 @@ import (
 	"net/http"
 )
 
-func HandlerPost(res http.ResponseWriter, req *http.Request, useCase usecase.ShortURLUseCase) {
+func HandlerPost(res http.ResponseWriter, req *http.Request, useCase usecase.ShortURLUseCase, conf *config.Config) {
 	if req.Method != http.MethodPost {
 		res.WriteHeader(http.StatusMethodNotAllowed)
 		return
@@ -28,7 +28,7 @@ func HandlerPost(res http.ResponseWriter, req *http.Request, useCase usecase.Sho
 		return
 	}
 
-	shortURL, err := useCase.CreateShortURL(string(body))
+	shortURL, err := useCase.CreateShortURL(string(body), conf)
 	if err != nil {
 		res.WriteHeader(http.StatusBadRequest)
 		return
@@ -36,17 +36,16 @@ func HandlerPost(res http.ResponseWriter, req *http.Request, useCase usecase.Sho
 
 	fullURL := ""
 
-	if config.BaseURL == "" {
+	if conf.BaseURL == "" {
 		var scheme string
 		if req.TLS != nil {
 			scheme = "https://"
 		} else {
 			scheme = "http://"
 		}
-
 		fullURL = scheme + req.Host + "/" + shortURL
 	} else {
-		fullURL = config.BaseURL + "/" + shortURL
+		fullURL = conf.BaseURL + "/" + shortURL
 	}
 
 	res.Header().Set("Content-Type", "text/plain")
@@ -75,7 +74,7 @@ func HandlerGet(res http.ResponseWriter, req *http.Request, useCase usecase.Shor
 	}
 }
 
-func HandlerAPIPost(w http.ResponseWriter, r *http.Request, useCase usecase.ShortURLUseCase) {
+func HandlerAPIPost(w http.ResponseWriter, r *http.Request, useCase usecase.ShortURLUseCase, conf *config.Config) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
@@ -89,7 +88,7 @@ func HandlerAPIPost(w http.ResponseWriter, r *http.Request, useCase usecase.Shor
 	}
 	defer r.Body.Close()
 
-	shortURL, err := useCase.CreateShortURL(req.URL)
+	shortURL, err := useCase.CreateShortURL(req.URL, conf)
 	if err != nil {
 		log.Println("Ошибка при создании шорта")
 		w.WriteHeader(http.StatusBadRequest)
@@ -98,7 +97,7 @@ func HandlerAPIPost(w http.ResponseWriter, r *http.Request, useCase usecase.Shor
 
 	fullURL := ""
 
-	if config.BaseURL == "" {
+	if conf.BaseURL == "" {
 		var scheme string
 		if r.TLS != nil {
 			scheme = "https://"
@@ -107,7 +106,7 @@ func HandlerAPIPost(w http.ResponseWriter, r *http.Request, useCase usecase.Shor
 		}
 		fullURL = scheme + r.Host + "/" + shortURL
 	} else {
-		fullURL = config.BaseURL + "/" + shortURL
+		fullURL = conf.BaseURL + "/" + shortURL
 	}
 
 	resp := models.Response{

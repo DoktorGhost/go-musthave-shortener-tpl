@@ -20,7 +20,7 @@ func NewShortURLUseCase(storage storage.Repository) *ShortURLUseCase {
 	return &ShortURLUseCase{storage: storage}
 }
 
-func (uc *ShortURLUseCase) CreateShortURL(originalURL string) (string, error) {
+func (uc *ShortURLUseCase) CreateShortURL(originalURL string, conf *config.Config) (string, error) {
 	_, err := url.ParseRequestURI(originalURL)
 	if err != nil {
 		return "", err
@@ -38,8 +38,8 @@ func (uc *ShortURLUseCase) CreateShortURL(originalURL string) (string, error) {
 			//запись в файл, если флаг true
 
 			if flags {
-				if config.FileStoragePath != "" {
-					prod, err := osfile.NewProducer(config.FileStoragePath)
+				if conf.FileStoragePath != "" {
+					prod, err := osfile.NewProducer(conf.FileStoragePath)
 					if err != nil {
 						log.Printf("Ошибка создания Producer: %v\n", err)
 						return short, nil
@@ -56,7 +56,7 @@ func (uc *ShortURLUseCase) CreateShortURL(originalURL string) (string, error) {
 							log.Printf("Ошибка записи в файл: %v\n", err)
 							return short, nil
 						}
-						log.Println("Успешная запись в файл", config.FileStoragePath)
+						log.Println("Успешная запись в файл", conf.FileStoragePath)
 						defer prod.Close()
 					}
 
