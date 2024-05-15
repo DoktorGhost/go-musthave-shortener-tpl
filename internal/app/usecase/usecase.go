@@ -27,35 +27,42 @@ func (uc *ShortURLUseCase) CreateShortURL(originalURL string) (string, error) {
 	}
 
 	for i := 0; i < 10; i++ {
+		//рандомная строка, будующая ссылка
 		shortURL := shortener.RandomString(8)
+		//проверяем, что данной строки нет в бд
 		_, err := uc.storage.Read(shortURL)
+		//если ошибка есть, значит данной строки нет в БД
 		if err != nil {
+			//записываем
 			short, flags := uc.storage.Create(shortURL, originalURL)
-			//запись в файл
-			if flags {
+			//запись в файл, если флаг true
+
+			if flags == true {
 				if config.FileStoragePath != "" {
 					prod, err := osfile.NewProducer(config.FileStoragePath)
 					if err != nil {
 						log.Printf("Ошибка создания Producer: %v\n", err)
-						return "", nil
+						return short, nil
+					} else {
+						currentTime := time.Now()
+						intFromTime := currentTime.Unix()
+						event := osfile.Event{
+							UUID:        strconv.Itoa(int(intFromTime)),
+							ShortURL:    short,
+							OriginalURL: originalURL,
+						}
+						err = prod.WriteEvent(&event)
+						if err != nil {
+							log.Printf("Ошибка записи в файл: %v\n", err)
+							return short, nil
+						}
+						log.Println("Успешная запись в файл", config.FileStoragePath)
+						defer prod.Close()
 					}
-					defer prod.Close()
 
-					currentTime := time.Now()
-					intFromTime := currentTime.Unix()
-					event := osfile.Event{
-						UUID:        strconv.Itoa(int(intFromTime)),
-						ShortURL:    short,
-						OriginalURL: originalURL,
-					}
-					err = prod.WriteEvent(&event)
-					if err != nil {
-						log.Printf("Ошибка записи в файл: %v\n", err)
-						return "", nil
-					}
-					log.Println("Успешная запись в файл", config.FileStoragePath)
 				}
 			}
+
 			return short, nil
 		}
 	}
