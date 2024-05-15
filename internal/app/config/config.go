@@ -12,7 +12,7 @@ import (
 type HostPort struct {
 	Hp              []string `env:"SERVER_ADDRESS" envSeparator:":"`
 	BaseURL         string   `env:"BASE_URL"`
-	FileStoragePath string   `env:"FILE_STORAGE"`
+	FileStoragePath string   `env:"FILE_STORAGE_PATH"`
 }
 
 type Config struct {
