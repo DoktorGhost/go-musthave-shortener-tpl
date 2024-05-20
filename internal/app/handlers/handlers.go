@@ -139,13 +139,11 @@ func HandlerPing(res http.ResponseWriter, req *http.Request, conf *config.Config
 		return
 	}
 
-	defer db.Close()
-
 	err = db.Ping()
 	if err != nil {
 		res.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-
+	defer db.Close()
 	res.WriteHeader(http.StatusOK)
 }
