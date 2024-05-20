@@ -138,6 +138,14 @@ func HandlerPing(res http.ResponseWriter, req *http.Request, conf *config.Config
 		res.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
 	defer db.Close()
+
+	err = db.Ping()
+	if err != nil {
+		res.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	res.WriteHeader(http.StatusOK)
 }
