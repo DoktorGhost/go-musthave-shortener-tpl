@@ -25,7 +25,7 @@ func InitRoutes(useCase usecase.ShortURLUseCase, conf *config.Config) chi.Router
 		HandlerAPIPost(w, r, useCase, conf)
 	})
 	r.Get("/ping", func(w http.ResponseWriter, r *http.Request) {
-		HandlerPing(w, r, useCase)
+		HandlerPing(w, r, conf)
 	})
 	return r
 }

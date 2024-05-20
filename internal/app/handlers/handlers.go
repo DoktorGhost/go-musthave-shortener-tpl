@@ -125,7 +125,7 @@ func HandlerAPIPost(w http.ResponseWriter, r *http.Request, useCase usecase.Shor
 	}
 }
 
-func HandlerPing(res http.ResponseWriter, req *http.Request, useCase usecase.ShortURLUseCase, conf *config.Config) {
+func HandlerPing(res http.ResponseWriter, req *http.Request, conf *config.Config) {
 	if req.Method != http.MethodGet {
 		res.WriteHeader(http.StatusMethodNotAllowed)
 		return
