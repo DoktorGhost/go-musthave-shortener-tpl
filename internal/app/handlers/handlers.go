@@ -1,11 +1,13 @@
 package handlers
 
 import (
+	"database/sql"
 	"encoding/json"
 	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/config"
 	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/models"
 	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/usecase"
 	"github.com/go-chi/chi/v5"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"io"
 	"log"
 	"net/http"
@@ -121,4 +123,21 @@ func HandlerAPIPost(w http.ResponseWriter, r *http.Request, useCase usecase.Shor
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+}
+
+func HandlerPing(res http.ResponseWriter, req *http.Request, useCase usecase.ShortURLUseCase, conf *config.Config) {
+	if req.Method != http.MethodGet {
+		res.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	ps := conf.DatabaseDSN
+
+	db, err := sql.Open("pgx", ps)
+	if err != nil {
+		res.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	defer db.Close()
+	res.WriteHeader(http.StatusOK)
 }

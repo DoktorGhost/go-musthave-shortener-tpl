@@ -24,5 +24,8 @@ func InitRoutes(useCase usecase.ShortURLUseCase, conf *config.Config) chi.Router
 	r.Post("/api/shorten", func(w http.ResponseWriter, r *http.Request) {
 		HandlerAPIPost(w, r, useCase, conf)
 	})
+	r.Get("/ping", func(w http.ResponseWriter, r *http.Request) {
+		HandlerPing(w, r, useCase)
+	})
 	return r
 }
