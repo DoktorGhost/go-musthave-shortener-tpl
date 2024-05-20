@@ -15,12 +15,14 @@ type Config struct {
 	Port            string
 	BaseURL         string
 	FileStoragePath string
+	DatabaseDSN     string
 }
 
 type EnvStruct struct {
 	Hp              []string `env:"SERVER_ADDRESS" envSeparator:":"`
 	BaseURL         string   `env:"BASE_URL"`
 	FileStoragePath string   `env:"FILE_STORAGE_PATH"`
+	DatabaseDSN     string   `env:"DATABASE_DSN"`
 }
 
 type HostPort struct {
@@ -61,6 +63,7 @@ func ParseConfig() *Config {
 	//парсим флаги командной строки
 	flag.Var(hostPort, "a", "Net address host:port")
 	flag.StringVar(&config.BaseURL, "b", "", "Net address base url")
+	flag.StringVar(&config.DatabaseDSN, "d", "", "Connect DB string")
 	flag.StringVar(&config.FileStoragePath, "f", "/tmp/short-url-db.json", "File storage path")
 	flag.Parse()
 
@@ -89,6 +92,11 @@ func ParseConfig() *Config {
 	value, ok := os.LookupEnv("FILE_STORAGE_PATH")
 	if ok {
 		config.FileStoragePath = value
+	}
+
+	value, ok = os.LookupEnv("DATABASE_DSN")
+	if ok {
+		config.DatabaseDSN = value
 	}
 
 	return config
