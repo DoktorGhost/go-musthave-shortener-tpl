@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/config"
@@ -11,6 +12,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"time"
 )
 
 func HandlerPost(res http.ResponseWriter, req *http.Request, useCase usecase.ShortURLUseCase, conf *config.Config) {
@@ -132,6 +134,7 @@ func HandlerPing(res http.ResponseWriter, req *http.Request, conf *config.Config
 	}
 
 	ps := conf.DatabaseDSN
+	//ps := "host=localhost port=5433 user=postgres password=postgres dbname=shortener"
 
 	db, err := sql.Open("pgx", ps)
 	if err != nil {
@@ -139,11 +142,11 @@ func HandlerPing(res http.ResponseWriter, req *http.Request, conf *config.Config
 		return
 	}
 
-	err = db.Ping()
-	if err != nil {
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+	if err = db.PingContext(ctx); err != nil {
 		res.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	defer db.Close()
 	res.WriteHeader(http.StatusOK)
 }
