@@ -6,7 +6,9 @@ import (
 	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/logger"
 	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/osfile"
 	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/storage/maps"
+	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/storage/postgres"
 	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/usecase"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"go.uber.org/zap"
 	"io"
 	"log"
@@ -14,9 +16,6 @@ import (
 )
 
 func StartServer(conf *config.Config) error {
-	db := maps.NewMapStorage()
-	shortURLUseCase := usecase.NewShortURLUseCase(db)
-
 	//логирование
 	logg, err := zap.NewDevelopment()
 	if err != nil {
@@ -27,11 +26,28 @@ func StartServer(conf *config.Config) error {
 	sugar := *logg.Sugar()
 	sugar.Infow("server started", "addr", conf.Host+":"+conf.Port)
 
+	var shortURLUseCase *usecase.ShortURLUseCase
+
+	//подключение к БД
+	if conf.DatabaseDSN != "" {
+		db, err := postgres.NewPostgresStorage(conf.DatabaseDSN)
+		if err != nil {
+			sugar.Fatalw("Ошибка при подключении к БД", "error", err)
+		}
+		sugar.Infow("Успешное подключение к БД")
+		shortURLUseCase = usecase.NewShortURLUseCase(db)
+
+	} else {
+		db := maps.NewMapStorage()
+		shortURLUseCase = usecase.NewShortURLUseCase(db)
+		sugar.Infow("Использование оперативной памяти вместо БД")
+	}
+
 	//чтение конфигурациооного файла бд
 	cons, err := osfile.NewConsumer(conf.FileStoragePath)
 
 	if err != nil {
-		log.Println("ошибка чтения конфигурациооного файла", err)
+		log.Println("ошибка чтения конфигурационного файла", err)
 	} else {
 		for {
 			event, err := cons.ReadEvent()
