@@ -13,6 +13,7 @@ type PostgresStorage struct {
 
 // NewPostgresRepository создает новый экземпляр PostgresRepository.
 func NewPostgresStorage(dsn string) (*PostgresStorage, error) {
+
 	db, err := sql.Open("pgx", dsn)
 	if err != nil {
 		return nil, err
