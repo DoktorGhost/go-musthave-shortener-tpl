@@ -134,7 +134,6 @@ func HandlerPing(res http.ResponseWriter, req *http.Request, conf *config.Config
 	}
 
 	ps := conf.DatabaseDSN
-	//ps := "host=localhost port=5433 user=postgres password=postgres dbname=shortener"
 
 	db, err := sql.Open("pgx", ps)
 	if err != nil {
@@ -149,4 +148,65 @@ func HandlerPing(res http.ResponseWriter, req *http.Request, conf *config.Config
 		return
 	}
 	res.WriteHeader(http.StatusOK)
+}
+
+func HandlerBatch(w http.ResponseWriter, r *http.Request, useCase usecase.ShortURLUseCase, conf *config.Config) {
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req []models.RequestBatch
+	var res []models.ResponseBatch
+	dec := json.NewDecoder(r.Body)
+	if err := dec.Decode(&req); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	defer r.Body.Close()
+
+	for _, batch := range req {
+		if batch.ID == "" || batch.OriginalURL == "" {
+			continue
+		}
+
+		shortURL, err := useCase.CreateShortURL(batch.OriginalURL, conf)
+		if err != nil {
+			log.Println("Ошибка при создании шорта")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		fullURL := ""
+
+		if conf.BaseURL == "" {
+			var scheme string
+			if r.TLS != nil {
+				scheme = "https://"
+			} else {
+				scheme = "http://"
+			}
+			fullURL = scheme + r.Host + "/" + shortURL
+		} else {
+			fullURL = conf.BaseURL + "/" + shortURL
+		}
+
+		resp := models.ResponseBatch{
+			ID:       batch.ID,
+			ShortURL: fullURL,
+		}
+
+		res = append(res, resp)
+
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	w.WriteHeader(http.StatusCreated)
+	enc := json.NewEncoder(w)
+	if err := enc.Encode(res); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 }
