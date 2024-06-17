@@ -3,6 +3,8 @@ package postgres
 import (
 	"database/sql"
 	"errors"
+	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/usecase"
+	"github.com/jackc/pgx/v5/pgconn"
 	"sync"
 )
 
@@ -51,27 +53,28 @@ func (r *PostgresStorage) Read(originalURL string) (string, error) {
 }
 
 // возвращает сокращенный URL и TRUE, если его еще не было в БД
-func (r *PostgresStorage) Create(shortURL string, url string) (string, bool) {
-	//читаем из БД по оригинальной ссылке
-	val, err := r.Read(url)
-	//если ошибка есть, то записываем значение в БД
+func (r *PostgresStorage) Create(shortURL string, url string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	query := "INSERT INTO urls (url, short_url) VALUES ($1, $2), VALUES($2, $1)"
+	_, err := r.db.Exec(query, url, shortURL)
+
 	if err != nil {
-		r.mu.Lock()
-		defer r.mu.Unlock()
-		query := "INSERT INTO urls (url, short_url) VALUES ($1, $2) RETURNING short_url"
-		var returnedShortURL string
-		err := r.db.QueryRow(query, url, shortURL).Scan(&returnedShortURL)
-		if err != nil {
-			return "", false
+		// Проверяем, является ли это ошибкой нарушения уникальности
+		pgErr, ok := err.(*pgconn.PgError)
+		if !ok {
+			// Обработка других типов ошибок
+			return err
 		}
-		query = "INSERT INTO urls (url, short_url) VALUES ($1, $2)"
-		_, err = r.db.Exec(query, shortURL, url)
-		if err != nil {
-			return "", false
+
+		if pgErr.Code == "23505" { // Код для ошибки нарушения уникальности
+			return usecase.ErrShortURLAlreadyExists
 		}
-		return returnedShortURL, true
+
+		// Обработка других ошибок
+		return err
 	}
-	return val, false
+	return nil
 }
 
 func (r *PostgresStorage) Delete(shortURL string) error {

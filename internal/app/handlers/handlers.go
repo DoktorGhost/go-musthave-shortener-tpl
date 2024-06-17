@@ -34,17 +34,6 @@ func HandlerPost(w http.ResponseWriter, r *http.Request, useCase usecase.ShortUR
 	}
 
 	shortURL, err := useCase.CreateShortURL(string(body), conf)
-	if err != nil {
-		if errors.Is(err, usecase.ErrShortURLAlreadyExists) {
-			log.Println(usecase.ErrShortURLAlreadyExists)
-			w.WriteHeader(http.StatusConflict) // 409 Conflict
-			return
-		} else {
-			log.Println("Ошибка при создании шорта")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-	}
 
 	fullURL := ""
 
@@ -58,6 +47,20 @@ func HandlerPost(w http.ResponseWriter, r *http.Request, useCase usecase.ShortUR
 		fullURL = scheme + r.Host + "/" + shortURL
 	} else {
 		fullURL = conf.BaseURL + "/" + shortURL
+	}
+
+	if err != nil {
+		if errors.Is(err, usecase.ErrShortURLAlreadyExists) {
+			log.Println(usecase.ErrShortURLAlreadyExists)
+			w.Header().Set("Content-Type", "text/plain")
+			w.WriteHeader(http.StatusConflict) // 409 Conflict
+			w.Write([]byte(fullURL))
+			return
+		} else {
+			log.Println("Ошибка при создании шорта", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
 	}
 
 	w.Header().Set("Content-Type", "text/plain")
@@ -101,17 +104,6 @@ func HandlerAPIPost(w http.ResponseWriter, r *http.Request, useCase usecase.Shor
 	defer r.Body.Close()
 
 	shortURL, err := useCase.CreateShortURL(req.URL, conf)
-	if err != nil {
-		if errors.Is(err, usecase.ErrShortURLAlreadyExists) {
-			log.Println(usecase.ErrShortURLAlreadyExists)
-			w.WriteHeader(http.StatusConflict) // 409 Conflict
-			return
-		} else {
-			log.Println("Ошибка при создании шорта")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-	}
 
 	fullURL := ""
 
@@ -129,6 +121,24 @@ func HandlerAPIPost(w http.ResponseWriter, r *http.Request, useCase usecase.Shor
 
 	resp := models.Response{
 		Result: fullURL,
+	}
+
+	if err != nil {
+		if errors.Is(err, usecase.ErrShortURLAlreadyExists) {
+			log.Println(usecase.ErrShortURLAlreadyExists)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusConflict) // 409 Conflict
+			enc := json.NewEncoder(w)
+			if err := enc.Encode(resp); err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			return
+		} else {
+			log.Println("Ошибка при создании шорта", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -186,15 +196,11 @@ func HandlerBatch(w http.ResponseWriter, r *http.Request, useCase usecase.ShortU
 
 		shortURL, err := useCase.CreateShortURL(batch.OriginalURL, conf)
 		if err != nil {
-			if errors.Is(err, usecase.ErrShortURLAlreadyExists) {
-				log.Println(usecase.ErrShortURLAlreadyExists)
-				w.WriteHeader(http.StatusConflict) // 409 Conflict
-				return
-			} else {
-				log.Println("Ошибка при создании шорта")
-				w.WriteHeader(http.StatusBadRequest)
-				return
-			}
+
+			log.Println("Ошибка при создании шорта", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+
 		}
 
 		fullURL := ""
