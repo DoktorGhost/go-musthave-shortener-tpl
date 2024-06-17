@@ -2,6 +2,7 @@ package maps
 
 import (
 	"errors"
+	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/usecase"
 	"sync"
 )
 
@@ -28,20 +29,16 @@ func (m *MapStorage) Read(URL string) (string, error) {
 }
 
 // создаем 2 записи: map[shortURL] = originURL, map[originURL] = shortURL
-func (m *MapStorage) Create(shortURL, originURL string) (string, bool) {
-	//читаем из БД по оригинальной ссылке
-	val, err := m.Read(originURL)
-	//если ошибка есть, то записываем значение в БД
-	if err != nil {
+func (m *MapStorage) Create(shortURL, originURL string) error {
+	if len(m.data[originURL]) < 1 {
 		m.mu.Lock()
 		defer m.mu.Unlock()
 		m.data[shortURL] = originURL
 		m.data[originURL] = shortURL
-		// второе значение тру,если мы записывали новое значение
-		return shortURL, true
+		return nil
+	} else {
+		return usecase.ErrShortURLAlreadyExists
 	}
-	//если значение уже было в БД, то второе значение фолс
-	return val, false
 }
 
 func (m *MapStorage) Delete(shortURL string) error {

@@ -57,8 +57,12 @@ func TestRoute(t *testing.T) {
 	sugar.Infow("server started")
 	conf := config.ParseConfig()
 	//добавим в бд тестовую запись
-	oneTest, _ := db.Create("SHORTurl", "https://vk.com")
-	twoTest, _ := db.Create("SHORTurl_2", ".ru")
+	_ = db.Create("SHORTurl", "https://vk.com")
+	_ = db.Create("SHORTurl_2", ".ru")
+
+	oneTest, _ := db.Read("https://vk.com")
+	twoTest, _ := db.Read(".ru")
+
 	ts := httptest.NewServer(InitRoutes(*storage, conf))
 	defer ts.Close()
 
@@ -130,7 +134,7 @@ func TestRoute(t *testing.T) {
 				body:   "https://vk.com",
 			},
 			want: want{
-				status: http.StatusCreated,
+				status: http.StatusConflict,
 				body:   ts.URL + "/SHORTurl",
 			},
 		},
@@ -217,7 +221,7 @@ func TestRoute(t *testing.T) {
 			values: values{
 				url:    "/api/shorten",
 				method: "POST",
-				body:   `{"url":"https://vk.com"}`,
+				body:   `{"url":"https://vks.com"}`,
 			},
 			want: want{
 				status: http.StatusCreated,
@@ -262,7 +266,7 @@ func TestRoute(t *testing.T) {
 
 		resp, err := http.DefaultClient.Do(r)
 		require.NoError(t, err)
-		require.Equal(t, http.StatusCreated, resp.StatusCode)
+		require.Equal(t, http.StatusConflict, resp.StatusCode)
 
 		defer resp.Body.Close()
 
@@ -279,7 +283,7 @@ func TestRoute(t *testing.T) {
 
 		resp, err := http.DefaultClient.Do(r)
 		require.NoError(t, err)
-		require.Equal(t, http.StatusCreated, resp.StatusCode)
+		require.Equal(t, http.StatusConflict, resp.StatusCode)
 
 		defer resp.Body.Close()
 

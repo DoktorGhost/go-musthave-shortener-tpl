@@ -20,53 +20,49 @@ func NewShortURLUseCase(storage storage.Repository) *ShortURLUseCase {
 	return &ShortURLUseCase{storage: storage}
 }
 
+var ErrShortURLAlreadyExists = errors.New("short url already exists")
+
 func (uc *ShortURLUseCase) CreateShortURL(originalURL string, conf *config.Config) (string, error) {
 	_, err := url.ParseRequestURI(originalURL)
 	if err != nil {
 		return "", err
 	}
 
-	for i := 0; i < 10; i++ {
-		//рандомная строка, будующая ссылка
-		shortURL := shortener.RandomString(8)
-		//проверяем, что данной строки нет в бд
-		_, err := uc.storage.Read(shortURL)
-		//если ошибка есть, значит данной строки нет в БД
-		if err != nil {
-			//записываем
-			short, flags := uc.storage.Create(shortURL, originalURL)
-			//запись в файл, если флаг true
+	//рандомная строка, будующая ссылка
+	shortURL := shortener.RandomString(8)
 
-			if flags {
-				if conf.FileStoragePath != "" {
-					prod, err := osfile.NewProducer(conf.FileStoragePath)
-					if err != nil {
-						log.Printf("Ошибка создания Producer: %v\n", err)
-						return short, nil
-					} else {
-						currentTime := time.Now()
-						intFromTime := currentTime.Unix()
-						event := osfile.Event{
-							UUID:        strconv.Itoa(int(intFromTime)),
-							ShortURL:    short,
-							OriginalURL: originalURL,
-						}
-						err = prod.WriteEvent(&event)
-						if err != nil {
-							log.Printf("Ошибка записи в файл: %v\n", err)
-							return short, nil
-						}
-						log.Println("Успешная запись в файл", conf.FileStoragePath)
-						defer prod.Close()
-					}
-
+	err = uc.storage.Create(shortURL, originalURL)
+	//запись в файл
+	if err == nil {
+		if conf.FileStoragePath != "" {
+			prod, err := osfile.NewProducer(conf.FileStoragePath)
+			if err != nil {
+				log.Printf("Ошибка создания Producer: %v\n", err)
+				return shortURL, nil
+			} else {
+				currentTime := time.Now()
+				intFromTime := currentTime.Unix()
+				event := osfile.Event{
+					UUID:        strconv.Itoa(int(intFromTime)),
+					ShortURL:    shortURL,
+					OriginalURL: originalURL,
 				}
+				err = prod.WriteEvent(&event)
+				if err != nil {
+					log.Printf("Ошибка записи в файл: %v\n", err)
+					return shortURL, nil
+				}
+				log.Println("Успешная запись в файл", conf.FileStoragePath)
+				defer prod.Close()
+				return shortURL, nil
 			}
-
-			return short, nil
+		} else {
+			return shortURL, nil
 		}
+	} else {
+		shortURL, _ := uc.storage.Read(originalURL)
+		return shortURL, err
 	}
-	return "", errors.New("short url already exists")
 }
 
 func (uc *ShortURLUseCase) GetOriginalURL(shortURL string) (string, error) {
