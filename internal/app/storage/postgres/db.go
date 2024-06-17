@@ -25,7 +25,7 @@ func NewPostgresStorage(dsn string) (*PostgresStorage, error) {
 	createTableQuery := `
     CREATE TABLE IF NOT EXISTS urls (
         id SERIAL PRIMARY KEY,
-        url TEXT NOT NULL,
+        url TEXT NOT NULL UNIQUE,
         short_url TEXT NOT NULL UNIQUE
     );
     `
@@ -36,18 +36,18 @@ func NewPostgresStorage(dsn string) (*PostgresStorage, error) {
 	return &PostgresStorage{db: db}, nil
 }
 
-func (r *PostgresStorage) Read(shortURL string) (string, error) {
+func (r *PostgresStorage) Read(originalURL string) (string, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	var url string
-	err := r.db.QueryRow("SELECT url FROM urls WHERE short_url = $1", shortURL).Scan(&url)
+	var shortURL string
+	err := r.db.QueryRow("SELECT url FROM urls WHERE short_url = $1", originalURL).Scan(&shortURL)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return "", errors.New("url not found")
 		}
 		return "", err
 	}
-	return url, nil
+	return shortURL, nil
 }
 
 // возвращает сокращенный URL и TRUE, если его еще не было в БД

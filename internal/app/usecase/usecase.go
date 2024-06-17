@@ -20,6 +20,8 @@ func NewShortURLUseCase(storage storage.Repository) *ShortURLUseCase {
 	return &ShortURLUseCase{storage: storage}
 }
 
+var ErrShortURLAlreadyExists = errors.New("short url already exists")
+
 func (uc *ShortURLUseCase) CreateShortURL(originalURL string, conf *config.Config) (string, error) {
 	_, err := url.ParseRequestURI(originalURL)
 	if err != nil {
@@ -66,7 +68,7 @@ func (uc *ShortURLUseCase) CreateShortURL(originalURL string, conf *config.Confi
 			return short, nil
 		}
 	}
-	return "", errors.New("short url already exists")
+	return "", ErrShortURLAlreadyExists
 }
 
 func (uc *ShortURLUseCase) GetOriginalURL(shortURL string) (string, error) {
