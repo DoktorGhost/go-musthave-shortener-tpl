@@ -56,7 +56,7 @@ func (r *PostgresStorage) Read(originalURL string) (string, error) {
 func (r *PostgresStorage) Create(shortURL string, url string) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	query := "INSERT INTO urls (url, short_url) VALUES ($1, $2), VALUES($2, $1)"
+	query := "INSERT INTO urls (url, short_url) VALUES ($1, $2), ($2, $1)"
 	_, err := r.db.Exec(query, url, shortURL)
 
 	if err != nil {
