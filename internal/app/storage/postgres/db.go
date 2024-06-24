@@ -91,9 +91,6 @@ func (r *PostgresStorage) ReadUrlsUserID(userID string) ([]storage.UserURLs, err
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
-	if len(urls) == 0 {
-		return nil, errors.New("url not found")
-	}
 
 	return urls, nil
 

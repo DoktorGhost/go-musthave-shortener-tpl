@@ -343,9 +343,14 @@ func HandlerGetUserURL(w http.ResponseWriter, r *http.Request, useCase usecase.S
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
-
+	log.Println("userID in hendker: ", userID)
 	urls, err := useCase.GetUserURL(userID)
 	if err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	if len(urls) == 0 {
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
