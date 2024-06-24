@@ -294,7 +294,7 @@ func HandlerGetUserURL(w http.ResponseWriter, r *http.Request, useCase usecase.S
 
 	urls, err := useCase.GetUserURL(userID)
 	if err != nil {
-		w.WriteHeader(http.StatusUnauthorized)
+		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 

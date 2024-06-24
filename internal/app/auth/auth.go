@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/shortener"
 	"github.com/golang-jwt/jwt/v4"
+	"log"
 	"net/http"
 	"time"
 )
@@ -33,7 +34,7 @@ func BuildJWTString() (string, error) {
 	// создаём строку токена
 	tokenString, err := token.SignedString([]byte(secretKey))
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to sign token: %v", err)
 	}
 
 	// возвращаем строку токена
@@ -55,11 +56,11 @@ func GetUserID(tokenString string) (string, error) {
 	}
 
 	if !token.Valid {
-		fmt.Println("Token is not valid")
+		log.Println("Token is not valid")
 		return "", fmt.Errorf("token is not valid")
 	}
 
-	fmt.Println("Token os valid")
+	log.Println("Token os valid")
 	return claims.UserID, nil
 }
 
@@ -107,3 +108,31 @@ func UserMiddleware(next http.Handler) http.Handler {
 type contextKey string
 
 const UserIDKey contextKey = "userID"
+
+/*
+func UserMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		userID, err := GetUserCookie(r)
+		if err != nil {
+			// Handle error when cookie cannot be retrieved or validated
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		// If userID is empty, generate a new JWT token
+		if userID == "" {
+			token, err := BuildJWTString()
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			SetUserCookie(w, token)
+			userID, _ = GetUserID(token)
+		}
+
+		// Set the userID in the context
+		ctx := context.WithValue(r.Context(), UserIDKey, userID)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+*/
