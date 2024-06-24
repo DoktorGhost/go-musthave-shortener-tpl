@@ -51,7 +51,7 @@ func (m *MapStorage) ReadOriginal(originalURL string) (string, error) {
 	}
 }
 
-func (m *MapStorage) ReadUrlsUserId(userID string) ([]storage.UserURLs, error) {
+func (m *MapStorage) ReadUrlsUserID(userID string) ([]storage.UserURLs, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	value, ok := m.ids[userID]

@@ -70,7 +70,7 @@ func (r *PostgresStorage) ReadOriginal(originalURL string) (string, error) {
 	return short, nil
 }
 
-func (r *PostgresStorage) ReadUrlsUserId(userID string) ([]storage.UserURLs, error) {
+func (r *PostgresStorage) ReadUrlsUserID(userID string) ([]storage.UserURLs, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	var urls []storage.UserURLs

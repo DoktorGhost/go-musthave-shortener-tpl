@@ -323,6 +323,7 @@ func TestRoute(t *testing.T) {
 		HandlerBatch(w, req, *storage, conf)
 
 		resp := w.Result()
+		defer resp.Body.Close()
 		require.Equal(t, http.StatusCreated, resp.StatusCode)
 
 		var resBody []models.ResponseBatch
@@ -338,6 +339,7 @@ func TestRoute(t *testing.T) {
 		HandlerBatch(w, req, *storage, conf)
 
 		resp := w.Result()
+		defer resp.Body.Close()
 		require.Equal(t, http.StatusMethodNotAllowed, resp.StatusCode)
 	})
 
@@ -352,6 +354,7 @@ func TestRoute(t *testing.T) {
 		HandlerBatch(w, req, *storage, conf)
 
 		resp := w.Result()
+		defer resp.Body.Close()
 		require.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 	})
 
@@ -363,6 +366,7 @@ func TestRoute(t *testing.T) {
 		HandlerBatch(w, req, *storage, conf)
 
 		resp := w.Result()
+		defer resp.Body.Close()
 		require.Equal(t, http.StatusInternalServerError, resp.StatusCode)
 	})
 }

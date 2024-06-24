@@ -109,7 +109,7 @@ func (uc *ShortURLUseCase) Write(short, shortURL, originalURL, userID string) er
 
 // получение всех урлов от одного ИД пользователя
 func (uc *ShortURLUseCase) GetUserURL(userID string) ([]storage.UserURLs, error) {
-	return uc.storage.ReadUrlsUserId(userID)
+	return uc.storage.ReadUrlsUserID(userID)
 }
 
 // получение шорта по оригинальной ссылке. ошибка если не найдена запись

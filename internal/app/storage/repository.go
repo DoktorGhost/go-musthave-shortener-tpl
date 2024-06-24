@@ -10,5 +10,5 @@ type Repository interface {
 	Create(short, shortURL, originURL, userID string) error
 	Read(short string) (string, string, error)
 	ReadOriginal(originalURL string) (string, error)
-	ReadUrlsUserId(userID string) ([]UserURLs, error)
+	ReadUrlsUserID(userID string) ([]UserURLs, error)
 }
