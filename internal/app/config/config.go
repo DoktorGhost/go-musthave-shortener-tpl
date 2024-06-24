@@ -25,6 +25,9 @@ type EnvStruct struct {
 	DatabaseDSN     string   `env:"DATABASE_DSN"`
 }
 
+//$env:DATABASE_DSN = "postgres://admin:admin@localhost:5433/postgres?sslmode=disable"
+//echo $env:DATABASE_DSN
+
 type HostPort struct {
 	Host string
 	Port int

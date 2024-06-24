@@ -30,6 +30,7 @@ func StartServer(conf *config.Config) error {
 
 	//подключение к БД
 	if conf.DatabaseDSN != "" {
+
 		db, err := postgres.NewPostgresStorage(conf.DatabaseDSN)
 		if err != nil {
 			sugar.Fatalw("Ошибка при подключении к БД", "error", err)
