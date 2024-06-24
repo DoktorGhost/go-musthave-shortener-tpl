@@ -24,7 +24,7 @@ func HandlerPost(w http.ResponseWriter, r *http.Request, useCase usecase.ShortUR
 
 	// Извлекаем userID из контекста
 	userID, ok := r.Context().Value(auth.UserIDKey).(string)
-	log.Println("USERID: ", userID)
+
 	if !ok {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
@@ -286,12 +286,25 @@ func HandlerGetUserURL(w http.ResponseWriter, r *http.Request, useCase usecase.S
 		return
 	}
 
-	//читаем куку
-	userID, err := auth.GetUserCookie(r)
-	log.Println("Читаем куку UserID: ", userID)
+	/*
+		//читаем куку
+		userID, err := auth.GetUserCookie(r)
+		log.Println("Читаем куку UserID: ", userID)
 
-	if err != nil {
-		log.Println(err)
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		//если кука с пустым UserID
+		if len(userID) < 1 {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+	*/
+	userID, ok := r.Context().Value(auth.UserIDKey).(string)
+
+	if !ok {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}

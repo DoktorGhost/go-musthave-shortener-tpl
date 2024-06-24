@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/shortener"
 	"github.com/golang-jwt/jwt/v4"
+	"log"
 	"net/http"
 	"time"
 )
@@ -98,12 +99,16 @@ func UserMiddleware(next http.Handler) http.Handler {
 			token, err := BuildJWTString()
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
 			}
 			SetUserCookie(w, token)
-			userID, _ := GetUserID(token)
-			ctx := context.WithValue(r.Context(), UserIDKey, userID)
-			next.ServeHTTP(w, r.WithContext(ctx))
+			userID, err = GetUserID(token) // исправлено: сохраняем userID из токена
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
 		}
+		log.Println("USERID: ", userID)
 		ctx := context.WithValue(r.Context(), UserIDKey, userID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
