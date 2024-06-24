@@ -8,8 +8,10 @@ import (
 
 type Event struct {
 	UUID        string `json:"uuid"`
+	Short       string `json:"short"`
 	ShortURL    string `json:"short_url"`
 	OriginalURL string `json:"original_url"`
+	UserID      string `json:"user_id"`
 }
 
 type Producer struct {

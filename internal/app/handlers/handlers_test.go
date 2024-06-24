@@ -3,9 +3,13 @@ package handlers
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
+	"encoding/json"
 	"fmt"
+	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/auth"
 	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/config"
 	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/logger"
+	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/models"
 	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/storage/maps"
 	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/usecase"
 	"github.com/stretchr/testify/assert"
@@ -56,15 +60,16 @@ func TestRoute(t *testing.T) {
 	sugar := *logg.Sugar()
 	sugar.Infow("server started")
 	conf := config.ParseConfig()
-	//добавим в бд тестовую запись
-	_ = db.Create("SHORTurl", "https://vk.com")
-	_ = db.Create("SHORTurl_2", ".ru")
-
-	oneTest, _ := db.Read("https://vk.com")
-	twoTest, _ := db.Read(".ru")
 
 	ts := httptest.NewServer(InitRoutes(*storage, conf))
 	defer ts.Close()
+	//добавим в бд тестовую запись
+	id := "admin1"
+	_ = db.Create("SHORTurl", (ts.URL + "/SHORTurl"), "https://vk.com", id)
+	_ = db.Create("SHORTurl_2", (ts.URL + "/SHORTurl_2"), ".ru", id)
+
+	oneTest, _ := db.ReadOriginal("https://vk.com")
+	twoTest, _ := db.ReadOriginal(".ru")
 
 	type values struct {
 		url    string
@@ -141,7 +146,7 @@ func TestRoute(t *testing.T) {
 		{
 			name: "Test #6 проверка извлечения URL по сокращенной ссылке",
 			values: values{
-				url:    "/" + oneTest,
+				url:    "/SHORTurl",
 				method: "GET",
 				body:   "",
 			},
@@ -271,6 +276,7 @@ func TestRoute(t *testing.T) {
 		defer resp.Body.Close()
 
 		b, err := io.ReadAll(resp.Body)
+
 		require.NoError(t, err)
 		require.JSONEq(t, successBody, string(b))
 	})
@@ -290,6 +296,78 @@ func TestRoute(t *testing.T) {
 		b, err := io.ReadAll(resp.Body)
 		require.NoError(t, err)
 
+		// Если ответ сжат, декомпрессируем его
+		if resp.Header.Get("Content-Encoding") == "gzip" {
+			zr, err := gzip.NewReader(bytes.NewReader(b))
+			require.NoError(t, err)
+			defer zr.Close()
+			b, err = io.ReadAll(zr)
+			require.NoError(t, err)
+		}
 		require.JSONEq(t, successBody, string(b))
+	})
+
+	conf = &config.Config{
+		BaseURL: "http://localhost",
+	}
+
+	t.Run("batch request", func(t *testing.T) {
+		reqBody := []models.RequestBatch{
+			{ID: "1", OriginalURL: "https://example.com"},
+			{ID: "2", OriginalURL: "https://example.org"},
+		}
+		reqBytes, _ := json.Marshal(reqBody)
+		req := httptest.NewRequest(http.MethodPost, "/api/shorten/batch", bytes.NewBuffer(reqBytes))
+		req = req.WithContext(context.WithValue(req.Context(), auth.UserIDKey, "user123"))
+		w := httptest.NewRecorder()
+
+		HandlerBatch(w, req, *storage, conf)
+
+		resp := w.Result()
+		defer resp.Body.Close()
+		require.Equal(t, http.StatusCreated, resp.StatusCode)
+
+		var resBody []models.ResponseBatch
+		err := json.NewDecoder(resp.Body).Decode(&resBody)
+		require.NoError(t, err)
+		require.Len(t, resBody, 2)
+	})
+
+	t.Run("invalid method", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/api/shorten/batch", nil)
+		w := httptest.NewRecorder()
+
+		HandlerBatch(w, req, *storage, conf)
+
+		resp := w.Result()
+		defer resp.Body.Close()
+		require.Equal(t, http.StatusMethodNotAllowed, resp.StatusCode)
+	})
+
+	t.Run("missing userID", func(t *testing.T) {
+		reqBody := []models.RequestBatch{
+			{ID: "1", OriginalURL: "https://example.com"},
+		}
+		reqBytes, _ := json.Marshal(reqBody)
+		req := httptest.NewRequest(http.MethodPost, "/api/shorten/batch", bytes.NewBuffer(reqBytes))
+		w := httptest.NewRecorder()
+
+		HandlerBatch(w, req, *storage, conf)
+
+		resp := w.Result()
+		defer resp.Body.Close()
+		require.Equal(t, http.StatusUnauthorized, resp.StatusCode)
+	})
+
+	t.Run("invalid JSON", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodPost, "/api/shorten/batch", bytes.NewBuffer([]byte("invalid json")))
+		req = req.WithContext(context.WithValue(req.Context(), auth.UserIDKey, "user123"))
+		w := httptest.NewRecorder()
+
+		HandlerBatch(w, req, *storage, conf)
+
+		resp := w.Result()
+		defer resp.Body.Close()
+		require.Equal(t, http.StatusInternalServerError, resp.StatusCode)
 	})
 }

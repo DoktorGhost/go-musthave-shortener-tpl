@@ -30,6 +30,7 @@ func StartServer(conf *config.Config) error {
 
 	//подключение к БД
 	if conf.DatabaseDSN != "" {
+
 		db, err := postgres.NewPostgresStorage(conf.DatabaseDSN)
 		if err != nil {
 			sugar.Fatalw("Ошибка при подключении к БД", "error", err)
@@ -61,7 +62,11 @@ func StartServer(conf *config.Config) error {
 			if event == nil {
 				break
 			}
-			shortURLUseCase.Write(event.OriginalURL, event.ShortURL)
+			err = shortURLUseCase.Write(event.Short, event.ShortURL, event.OriginalURL, event.UserID)
+			if err != nil {
+				log.Println(err)
+				continue
+			}
 		}
 	}
 
