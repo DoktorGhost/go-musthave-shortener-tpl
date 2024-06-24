@@ -31,7 +31,7 @@ func NewPostgresStorage(dsn string) (*PostgresStorage, error) {
         short TEXT NOT NULL UNIQUE,
         short_url TEXT NOT NULL UNIQUE,
         original_url TEXT NOT NULL UNIQUE,
-        user_id TEXT NOT NULL,
+        user_id TEXT NOT NULL
     );
     `
 	if _, err = db.Exec(createTableQuery); err != nil {
