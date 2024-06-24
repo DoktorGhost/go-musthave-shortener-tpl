@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/auth"
 	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/config"
 	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/logger"
 	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/models"
@@ -317,7 +318,7 @@ func TestRoute(t *testing.T) {
 		}
 		reqBytes, _ := json.Marshal(reqBody)
 		req := httptest.NewRequest(http.MethodPost, "/api/shorten/batch", bytes.NewBuffer(reqBytes))
-		req = req.WithContext(context.WithValue(req.Context(), "userID", "user123"))
+		req = req.WithContext(context.WithValue(req.Context(), auth.UserIDKey, "user123"))
 		w := httptest.NewRecorder()
 
 		HandlerBatch(w, req, *storage, conf)
@@ -360,7 +361,7 @@ func TestRoute(t *testing.T) {
 
 	t.Run("invalid JSON", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodPost, "/api/shorten/batch", bytes.NewBuffer([]byte("invalid json")))
-		req = req.WithContext(context.WithValue(req.Context(), "userID", "user123"))
+		req = req.WithContext(context.WithValue(req.Context(), auth.UserIDKey, "user123"))
 		w := httptest.NewRecorder()
 
 		HandlerBatch(w, req, *storage, conf)

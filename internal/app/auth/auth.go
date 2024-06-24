@@ -41,7 +41,7 @@ func BuildJWTString() (string, error) {
 }
 
 // извлекаем UserID и проверяем токен на валидность
-func GetUserId(tokenString string) (string, error) {
+func GetUserID(tokenString string) (string, error) {
 	claims := &Claims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims,
 		func(t *jwt.Token) (interface{}, error) {
@@ -81,7 +81,7 @@ func GetUserCookie(r *http.Request) (string, error) {
 	if err != nil {
 		return "", http.ErrNoCookie
 	}
-	userID, err := GetUserId(cookie.Value)
+	userID, err := GetUserID(cookie.Value)
 	if err != nil {
 		return "", err
 	}
@@ -99,7 +99,11 @@ func UserMiddleware(next http.Handler) http.Handler {
 			}
 			SetUserCookie(w, token)
 		}
-		ctx := context.WithValue(r.Context(), "userID", userID)
+		ctx := context.WithValue(r.Context(), UserIDKey, userID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
+
+type contextKey string
+
+const UserIDKey contextKey = "userID"

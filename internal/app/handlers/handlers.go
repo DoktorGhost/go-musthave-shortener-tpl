@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/auth"
 	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/config"
 	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/models"
 	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/usecase"
@@ -22,7 +23,7 @@ func HandlerPost(w http.ResponseWriter, r *http.Request, useCase usecase.ShortUR
 	}
 
 	// Извлекаем userID из контекста
-	userID, ok := r.Context().Value("userID").(string)
+	userID, ok := r.Context().Value(auth.UserIDKey).(string)
 	if !ok {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
@@ -112,7 +113,7 @@ func HandlerAPIPost(w http.ResponseWriter, r *http.Request, useCase usecase.Shor
 		return
 	}
 
-	userID, ok := r.Context().Value("userID").(string)
+	userID, ok := r.Context().Value(auth.UserIDKey).(string)
 	if !ok {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
@@ -211,7 +212,7 @@ func HandlerBatch(w http.ResponseWriter, r *http.Request, useCase usecase.ShortU
 		return
 	}
 
-	userID, ok := r.Context().Value("userID").(string)
+	userID, ok := r.Context().Value(auth.UserIDKey).(string)
 	if !ok {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
@@ -285,7 +286,7 @@ func HandlerGetUserURL(w http.ResponseWriter, r *http.Request, useCase usecase.S
 	}
 
 	// Извлекаем userID из контекста
-	userID, ok := r.Context().Value("userID").(string)
+	userID, ok := r.Context().Value(auth.UserIDKey).(string)
 	if !ok {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
