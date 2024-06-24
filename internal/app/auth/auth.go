@@ -5,10 +5,13 @@ import (
 	"fmt"
 	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/shortener"
 	"github.com/golang-jwt/jwt/v4"
-	"log"
 	"net/http"
 	"time"
 )
+
+type contextKey string
+
+const UserIDKey contextKey = "userID"
 
 type Claims struct {
 	jwt.RegisteredClaims
@@ -56,11 +59,9 @@ func GetUserID(tokenString string) (string, error) {
 	}
 
 	if !token.Valid {
-		log.Println("Token is not valid")
 		return "", fmt.Errorf("token is not valid")
 	}
 
-	log.Println("Token os valid")
 	return claims.UserID, nil
 }
 
@@ -80,7 +81,7 @@ func SetUserCookie(w http.ResponseWriter, token string) {
 func GetUserCookie(r *http.Request) (string, error) {
 	cookie, err := r.Cookie("Token")
 	if err != nil {
-		return "", http.ErrNoCookie
+		return "", err
 	}
 	userID, err := GetUserID(cookie.Value)
 	if err != nil {
@@ -97,42 +98,16 @@ func UserMiddleware(next http.Handler) http.Handler {
 			token, err := BuildJWTString()
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
-			}
-			SetUserCookie(w, token)
-		}
-		ctx := context.WithValue(r.Context(), UserIDKey, userID)
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
-}
-
-type contextKey string
-
-const UserIDKey contextKey = "userID"
-
-/*
-func UserMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		userID, err := GetUserCookie(r)
-		if err != nil {
-			// Handle error when cookie cannot be retrieved or validated
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
-			return
-		}
-
-		// If userID is empty, generate a new JWT token
-		if userID == "" {
-			token, err := BuildJWTString()
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
 			SetUserCookie(w, token)
-			userID, _ = GetUserID(token)
+			userID, _ := GetUserID(token)
+			ctx := context.WithValue(r.Context(), UserIDKey, userID)
+			r = r.WithContext(ctx)
+		} else {
+			ctx := context.WithValue(r.Context(), UserIDKey, userID)
+			r = r.WithContext(ctx)
 		}
-
-		// Set the userID in the context
-		ctx := context.WithValue(r.Context(), UserIDKey, userID)
-		next.ServeHTTP(w, r.WithContext(ctx))
+		next.ServeHTTP(w, r)
 	})
 }
-*/

@@ -13,9 +13,13 @@ import (
 func InitRoutes(useCase usecase.ShortURLUseCase, conf *config.Config) chi.Router {
 	r := chi.NewRouter()
 
+	r.Use(auth.UserMiddleware)
 	r.Use(logger.WithLogging)
 	r.Use(compressor.GzipAndDecompressMiddleware)
 
+	r.Post("/", func(w http.ResponseWriter, r *http.Request) {
+		HandlerPost(w, r, useCase, conf)
+	})
 	r.Get("/{shortURL}", func(w http.ResponseWriter, r *http.Request) {
 		HandlerGet(w, r, useCase)
 	})
@@ -25,19 +29,12 @@ func InitRoutes(useCase usecase.ShortURLUseCase, conf *config.Config) chi.Router
 	r.Get("/api/user/urls", func(w http.ResponseWriter, r *http.Request) {
 		HandlerGetUserURL(w, r, useCase)
 	})
-
-	r.Group(func(r chi.Router) {
-		r.Use(auth.UserMiddleware)
-		r.Post("/", func(w http.ResponseWriter, r *http.Request) {
-			HandlerPost(w, r, useCase, conf)
-		})
-
-		r.Post("/api/shorten", func(w http.ResponseWriter, r *http.Request) {
-			HandlerAPIPost(w, r, useCase, conf)
-		})
-		r.Post("/api/shorten/batch", func(w http.ResponseWriter, r *http.Request) {
-			HandlerBatch(w, r, useCase, conf)
-		})
+	r.Post("/api/shorten", func(w http.ResponseWriter, r *http.Request) {
+		HandlerAPIPost(w, r, useCase, conf)
 	})
+	r.Post("/api/shorten/batch", func(w http.ResponseWriter, r *http.Request) {
+		HandlerBatch(w, r, useCase, conf)
+	})
+
 	return r
 }

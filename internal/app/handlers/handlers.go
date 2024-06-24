@@ -284,14 +284,24 @@ func HandlerGetUserURL(w http.ResponseWriter, r *http.Request, useCase usecase.S
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
-
-	// Извлекаем userID из контекста
-	userID, ok := r.Context().Value(auth.UserIDKey).(string)
-	if !ok {
+	//читаем куку
+	userID, err := auth.GetUserCookie(r)
+	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
-
+	if len(userID) < 1 {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	/*
+		// Извлекаем userID из контекста
+		userID, ok := r.Context().Value(auth.UserIDKey).(string)
+		if !ok {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+	*/
 	urls, err := useCase.GetUserURL(userID)
 	if err != nil {
 		w.WriteHeader(http.StatusNoContent)
