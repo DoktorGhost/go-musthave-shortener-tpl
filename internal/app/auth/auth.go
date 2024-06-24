@@ -98,16 +98,13 @@ func UserMiddleware(next http.Handler) http.Handler {
 			token, err := BuildJWTString()
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
 			}
 			SetUserCookie(w, token)
 			userID, _ := GetUserID(token)
 			ctx := context.WithValue(r.Context(), UserIDKey, userID)
-			r = r.WithContext(ctx)
-		} else {
-			ctx := context.WithValue(r.Context(), UserIDKey, userID)
-			r = r.WithContext(ctx)
+			next.ServeHTTP(w, r.WithContext(ctx))
 		}
-		next.ServeHTTP(w, r)
+		ctx := context.WithValue(r.Context(), UserIDKey, userID)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
