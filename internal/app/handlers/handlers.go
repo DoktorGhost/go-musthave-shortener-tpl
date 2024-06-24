@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"errors"
 	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/config"
 	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/models"
 	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/usecase"
@@ -21,6 +20,14 @@ func HandlerPost(w http.ResponseWriter, r *http.Request, useCase usecase.ShortUR
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
+
+	// Извлекаем userID из контекста
+	userID, ok := r.Context().Value("userID").(string)
+	if !ok {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -33,9 +40,25 @@ func HandlerPost(w http.ResponseWriter, r *http.Request, useCase usecase.ShortUR
 		return
 	}
 
-	shortURL, err := useCase.CreateShortURL(string(body), conf)
+	originalURL := string(body)
+	short, err := useCase.GetShort(originalURL)
 
-	fullURL := ""
+	if err == nil {
+		log.Println(usecase.ErrShortURLAlreadyExists)
+		w.Header().Set("Content-Type", "text/plain")
+		w.WriteHeader(http.StatusConflict) // 409 Conflict
+		shortURL, _ := useCase.GetShortURL(short)
+		w.Write([]byte(shortURL))
+		return
+	}
+
+	short, err = useCase.GenerateShort(originalURL)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	shortURL := ""
 
 	if conf.BaseURL == "" {
 		var scheme string
@@ -44,28 +67,22 @@ func HandlerPost(w http.ResponseWriter, r *http.Request, useCase usecase.ShortUR
 		} else {
 			scheme = "http://"
 		}
-		fullURL = scheme + r.Host + "/" + shortURL
+		shortURL = scheme + r.Host + "/" + short
 	} else {
-		fullURL = conf.BaseURL + "/" + shortURL
+		shortURL = conf.BaseURL + "/" + short
 	}
 
+	err = useCase.CreateShortURL(short, shortURL, originalURL, userID, conf)
+
 	if err != nil {
-		if errors.Is(err, usecase.ErrShortURLAlreadyExists) {
-			log.Println(usecase.ErrShortURLAlreadyExists)
-			w.Header().Set("Content-Type", "text/plain")
-			w.WriteHeader(http.StatusConflict) // 409 Conflict
-			w.Write([]byte(fullURL))
-			return
-		} else {
-			log.Println("Ошибка при создании шорта", err)
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
+		log.Println("Ошибка при создании шорта", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
 
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte(fullURL))
+	w.Write([]byte(shortURL))
 }
 
 func HandlerGet(res http.ResponseWriter, req *http.Request, useCase usecase.ShortURLUseCase) {
@@ -95,6 +112,12 @@ func HandlerAPIPost(w http.ResponseWriter, r *http.Request, useCase usecase.Shor
 		return
 	}
 
+	userID, ok := r.Context().Value("userID").(string)
+	if !ok {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
 	var req models.Request
 	dec := json.NewDecoder(r.Body)
 	if err := dec.Decode(&req); err != nil {
@@ -103,9 +126,28 @@ func HandlerAPIPost(w http.ResponseWriter, r *http.Request, useCase usecase.Shor
 	}
 	defer r.Body.Close()
 
-	shortURL, err := useCase.CreateShortURL(req.URL, conf)
+	originalURL := req.URL
+	short, err := useCase.GetShort(originalURL)
+	if err == nil {
+		log.Println(usecase.ErrShortURLAlreadyExists)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusConflict) // 409 Conflict
+		shortURL, _ := useCase.GetShortURL(short)
+		resp := models.Response{Result: shortURL}
+		enc := json.NewEncoder(w)
+		if err := enc.Encode(resp); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+		return
+	}
 
-	fullURL := ""
+	short, err = useCase.GenerateShort(originalURL)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	shortURL := ""
 
 	if conf.BaseURL == "" {
 		var scheme string
@@ -114,31 +156,20 @@ func HandlerAPIPost(w http.ResponseWriter, r *http.Request, useCase usecase.Shor
 		} else {
 			scheme = "http://"
 		}
-		fullURL = scheme + r.Host + "/" + shortURL
+		shortURL = scheme + r.Host + "/" + short
 	} else {
-		fullURL = conf.BaseURL + "/" + shortURL
+		shortURL = conf.BaseURL + "/" + short
 	}
 
 	resp := models.Response{
-		Result: fullURL,
+		Result: shortURL,
 	}
 
+	err = useCase.CreateShortURL(short, shortURL, req.URL, userID, conf)
 	if err != nil {
-		if errors.Is(err, usecase.ErrShortURLAlreadyExists) {
-			log.Println(usecase.ErrShortURLAlreadyExists)
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusConflict) // 409 Conflict
-			enc := json.NewEncoder(w)
-			if err := enc.Encode(resp); err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-			return
-		} else {
-			log.Println("Ошибка при создании шорта", err)
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
+		log.Println("Ошибка при создании шорта", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -180,6 +211,12 @@ func HandlerBatch(w http.ResponseWriter, r *http.Request, useCase usecase.ShortU
 		return
 	}
 
+	userID, ok := r.Context().Value("userID").(string)
+	if !ok {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
 	var req []models.RequestBatch
 	var res []models.ResponseBatch
 	dec := json.NewDecoder(r.Body)
@@ -194,16 +231,14 @@ func HandlerBatch(w http.ResponseWriter, r *http.Request, useCase usecase.ShortU
 			continue
 		}
 
-		shortURL, err := useCase.CreateShortURL(batch.OriginalURL, conf)
+		short, err := useCase.GenerateShort(batch.OriginalURL)
 		if err != nil {
-
 			log.Println("Ошибка при создании шорта", err)
 			w.WriteHeader(http.StatusBadRequest)
 			return
-
 		}
 
-		fullURL := ""
+		shortURL := ""
 
 		if conf.BaseURL == "" {
 			var scheme string
@@ -212,14 +247,20 @@ func HandlerBatch(w http.ResponseWriter, r *http.Request, useCase usecase.ShortU
 			} else {
 				scheme = "http://"
 			}
-			fullURL = scheme + r.Host + "/" + shortURL
+			shortURL = scheme + r.Host + "/" + short
 		} else {
-			fullURL = conf.BaseURL + "/" + shortURL
+			shortURL = conf.BaseURL + "/" + short
+		}
+
+		err = useCase.CreateShortURL(short, shortURL, batch.OriginalURL, userID, conf)
+
+		if err != nil {
+			continue
 		}
 
 		resp := models.ResponseBatch{
 			ID:       batch.ID,
-			ShortURL: fullURL,
+			ShortURL: shortURL,
 		}
 
 		res = append(res, resp)
@@ -233,6 +274,35 @@ func HandlerBatch(w http.ResponseWriter, r *http.Request, useCase usecase.ShortU
 	if err := enc.Encode(res); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
+	}
+
+}
+
+func HandlerGetUserURL(w http.ResponseWriter, r *http.Request, useCase usecase.ShortURLUseCase) {
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Извлекаем userID из контекста
+	userID, ok := r.Context().Value("userID").(string)
+	if !ok {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	urls, err := useCase.GetUserURL(userID)
+	if err != nil {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	err = json.NewEncoder(w).Encode(urls)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
 }

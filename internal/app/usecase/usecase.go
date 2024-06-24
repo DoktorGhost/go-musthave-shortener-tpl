@@ -22,23 +22,41 @@ func NewShortURLUseCase(storage storage.Repository) *ShortURLUseCase {
 
 var ErrShortURLAlreadyExists = errors.New("short url already exists")
 
-func (uc *ShortURLUseCase) CreateShortURL(originalURL string, conf *config.Config) (string, error) {
+// генерирует рандомную строку и проверяет, что в БД нет записи с этой строкой
+func (uc *ShortURLUseCase) GenerateShort(originalURL string) (string, error) {
 	_, err := url.ParseRequestURI(originalURL)
 	if err != nil {
 		return "", err
 	}
 
 	//рандомная строка, будующая ссылка
-	shortURL := shortener.RandomString(8)
 
-	err = uc.storage.Create(shortURL, originalURL)
+	//вставить проверку, что данной строки нет в БД
+	for i := 1; i <= 3; i++ {
+		short := shortener.RandomString(8)
+		_, _, err := uc.storage.Read(short)
+		if err != nil {
+			return short, nil
+		} else {
+			time.Sleep(time.Duration(i) * time.Second)
+			continue
+		}
+	}
+	return "", errors.New("ошибка генерации сокрвщенного URL")
+}
+
+// запись
+func (uc *ShortURLUseCase) CreateShortURL(short, shortURL, originalURL, userID string, conf *config.Config) error {
+
+	err := uc.storage.Create(short, shortURL, originalURL, userID)
+
 	//запись в файл
 	if err == nil {
 		if conf.FileStoragePath != "" {
 			prod, err := osfile.NewProducer(conf.FileStoragePath)
 			if err != nil {
 				log.Printf("Ошибка создания Producer: %v\n", err)
-				return shortURL, nil
+				return nil
 			} else {
 				currentTime := time.Now()
 				intFromTime := currentTime.Unix()
@@ -50,23 +68,23 @@ func (uc *ShortURLUseCase) CreateShortURL(originalURL string, conf *config.Confi
 				err = prod.WriteEvent(&event)
 				if err != nil {
 					log.Printf("Ошибка записи в файл: %v\n", err)
-					return shortURL, nil
+					return nil
 				}
 				log.Println("Успешная запись в файл", conf.FileStoragePath)
 				defer prod.Close()
-				return shortURL, nil
+				return nil
 			}
 		} else {
-			return shortURL, nil
+			return nil
 		}
 	} else {
-		shortURL, _ := uc.storage.Read(originalURL)
-		return shortURL, err
+		return err
 	}
 }
 
-func (uc *ShortURLUseCase) GetOriginalURL(shortURL string) (string, error) {
-	originalURL, err := uc.storage.Read(shortURL)
+// возвращает оригинальный урл по сокращенной строке "авыаыв"
+func (uc *ShortURLUseCase) GetOriginalURL(short string) (string, error) {
+	originalURL, _, err := uc.storage.Read(short)
 	if err != nil {
 		return "", err
 	} else {
@@ -74,10 +92,33 @@ func (uc *ShortURLUseCase) GetOriginalURL(shortURL string) (string, error) {
 	}
 }
 
-func (uc *ShortURLUseCase) DeleteURL(shortURL string) error {
-	return uc.storage.Delete(shortURL)
+// возвращает оригинальный урл по сокращенной строке "авыаыв"
+func (uc *ShortURLUseCase) GetShortURL(short string) (string, error) {
+	_, shortURL, err := uc.storage.Read(short)
+	if err != nil {
+		return "", err
+	} else {
+		return shortURL, nil
+	}
 }
 
-func (uc *ShortURLUseCase) Write(originalURL, shortURL string) {
-	uc.storage.Create(shortURL, originalURL)
+// запись
+func (uc *ShortURLUseCase) Write(short, shortURL, originalURL, userID string) error {
+	return uc.storage.Create(short, shortURL, originalURL, userID)
+}
+
+// получение всех урлов от одного ИД пользователя
+func (uc *ShortURLUseCase) GetUserURL(userID string) ([]storage.UserURLs, error) {
+	return uc.storage.ReadUrlsUserId(userID)
+}
+
+// получение шорта по оригинальной ссылке. ошибка если не найдена запись
+func (uc *ShortURLUseCase) GetShort(originalURL string) (string, error) {
+	short, err := uc.storage.ReadOriginal(originalURL)
+
+	if err != nil {
+		return "", err
+	} else {
+		return short, nil
+	}
 }

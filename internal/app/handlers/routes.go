@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/auth"
 	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/compressor"
 	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/config"
 	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/logger"
@@ -14,6 +15,7 @@ func InitRoutes(useCase usecase.ShortURLUseCase, conf *config.Config) chi.Router
 
 	r.Use(logger.WithLogging)
 	r.Use(compressor.GzipAndDecompressMiddleware)
+	r.Use(auth.UserMiddleware)
 
 	r.Post("/", func(w http.ResponseWriter, r *http.Request) {
 		HandlerPost(w, r, useCase, conf)
@@ -30,5 +32,10 @@ func InitRoutes(useCase usecase.ShortURLUseCase, conf *config.Config) chi.Router
 	r.Get("/ping", func(w http.ResponseWriter, r *http.Request) {
 		HandlerPing(w, r, conf)
 	})
+
+	r.Get("/api/user/urls", func(w http.ResponseWriter, r *http.Request) {
+		HandlerGetUserURL(w, r, useCase)
+	})
+
 	return r
 }

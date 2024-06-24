@@ -61,7 +61,11 @@ func StartServer(conf *config.Config) error {
 			if event == nil {
 				break
 			}
-			shortURLUseCase.Write(event.OriginalURL, event.ShortURL)
+			err = shortURLUseCase.Write(event.Short, event.ShortURL, event.OriginalURL, event.UserID)
+			if err != nil {
+				log.Println(err)
+				continue
+			}
 		}
 	}
 
