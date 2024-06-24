@@ -280,6 +280,7 @@ func HandlerBatch(w http.ResponseWriter, r *http.Request, useCase usecase.ShortU
 
 }
 
+/*
 func HandlerGetUserURL(w http.ResponseWriter, r *http.Request, useCase usecase.ShortURLUseCase) {
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -301,7 +302,7 @@ func HandlerGetUserURL(w http.ResponseWriter, r *http.Request, useCase usecase.S
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
-	*/
+	//////////////
 	userID, ok := r.Context().Value(auth.UserIDKey).(string)
 
 	if !ok {
@@ -328,4 +329,32 @@ func HandlerGetUserURL(w http.ResponseWriter, r *http.Request, useCase usecase.S
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
+}
+*/
+
+func HandlerGetUserURL(w http.ResponseWriter, r *http.Request, useCase usecase.ShortURLUseCase) {
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	userID, ok := r.Context().Value(auth.UserIDKey).(string)
+	if !ok || userID == "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	urls, err := useCase.GetUserURL(userID)
+	if err != nil {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	err = json.NewEncoder(w).Encode(urls)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }

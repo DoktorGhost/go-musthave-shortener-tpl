@@ -1,5 +1,6 @@
 package auth
 
+/*
 import (
 	"context"
 	"fmt"
@@ -9,6 +10,7 @@ import (
 	"net/http"
 	"time"
 )
+
 
 type contextKey string
 
@@ -109,6 +111,90 @@ func UserMiddleware(next http.Handler) http.Handler {
 			}
 		}
 		log.Println("USERID: ", userID)
+		ctx := context.WithValue(r.Context(), UserIDKey, userID)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+*/
+
+import (
+	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
+	"fmt"
+	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/shortener"
+	"net/http"
+	"strings"
+	"time"
+)
+
+type contextKey string
+
+const UserIDKey contextKey = "userID"
+const secretKey = "supersecretkey"
+
+func createSignedCookie(userID string) (*http.Cookie, error) {
+	// Создаем HMAC подпись
+	mac := hmac.New(sha256.New, []byte(secretKey))
+	mac.Write([]byte(userID))
+	signature := hex.EncodeToString(mac.Sum(nil))
+
+	// Создаем куку
+	cookieValue := fmt.Sprintf("%s.%s", userID, signature)
+	cookie := &http.Cookie{
+		Name:    "UserID",
+		Value:   cookieValue,
+		Expires: time.Now().Add(24 * time.Hour),
+	}
+	return cookie, nil
+}
+
+func verifySignedCookie(cookie *http.Cookie) (string, error) {
+	parts := strings.Split(cookie.Value, ".")
+	if len(parts) != 2 {
+		return "", fmt.Errorf("invalid cookie format")
+	}
+
+	userID := parts[0]
+	providedSignature := parts[1]
+
+	// Проверяем HMAC подпись
+	mac := hmac.New(sha256.New, []byte(secretKey))
+	mac.Write([]byte(userID))
+	expectedSignature := hex.EncodeToString(mac.Sum(nil))
+
+	if providedSignature != expectedSignature {
+		return "", fmt.Errorf("invalid cookie signature")
+	}
+
+	return userID, nil
+}
+
+func UserMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		userCookie, err := r.Cookie("UserID")
+		var userID string
+
+		if err != nil {
+			// Кука отсутствует, создаем новую
+			userID = shortener.RandomString(5)
+			signedCookie, err := createSignedCookie(userID)
+			if err != nil {
+				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+				return
+			}
+			http.SetCookie(w, signedCookie)
+		} else {
+			// Проверяем существующую куку
+			userID, err = verifySignedCookie(userCookie)
+			if err != nil {
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+		}
+
+		// Устанавливаем userID в контекст
 		ctx := context.WithValue(r.Context(), UserIDKey, userID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
