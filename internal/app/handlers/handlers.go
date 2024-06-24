@@ -338,19 +338,20 @@ func HandlerGetUserURL(w http.ResponseWriter, r *http.Request, useCase usecase.S
 		return
 	}
 
-	userID, ok := r.Context().Value(auth.UserIDKey).(string)
-	if !ok || userID == "" {
+	userCookie, err := r.Cookie("UserID")
+	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
-	log.Println("userID in hendker: ", userID)
-	urls, err := useCase.GetUserURL(userID)
-	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusUnauthorized)
+	userID, err := auth.VerifySignedCookie(userCookie)
+
+	if err != nil || userID == "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
-	if len(urls) == 0 {
+
+	urls, err := useCase.GetUserURL(userID)
+	if err != nil || len(urls) == 0 {
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}

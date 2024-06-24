@@ -124,6 +124,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/DoktorGhost/go-musthave-shortener-tpl/internal/app/shortener"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -150,7 +151,7 @@ func createSignedCookie(userID string) (*http.Cookie, error) {
 	return cookie, nil
 }
 
-func verifySignedCookie(cookie *http.Cookie) (string, error) {
+func VerifySignedCookie(cookie *http.Cookie) (string, error) {
 	parts := strings.Split(cookie.Value, ".")
 	if len(parts) != 2 {
 		return "", fmt.Errorf("invalid cookie format")
@@ -187,7 +188,8 @@ func UserMiddleware(next http.Handler) http.Handler {
 			http.SetCookie(w, signedCookie)
 		} else {
 			// Проверяем существующую куку
-			userID, err = verifySignedCookie(userCookie)
+			userID, err = VerifySignedCookie(userCookie)
+			log.Println("midlware userID: ", userID)
 			if err != nil {
 				http.Error(w, "Unauthorized", http.StatusUnauthorized)
 				return
